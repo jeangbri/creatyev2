@@ -19,7 +19,7 @@ export function ServerConfigError({ details }: { details?: any }) {
                         <p className="font-semibold mb-2">Ação necessária na Vercel:</p>
                         <ul className="list-disc pl-4 space-y-1">
                             <li>Verifique <strong>DATABASE_URL</strong> e <strong>DIRECT_URL</strong> (se usar pooled connection).</li>
-                            <li>Configure <strong>PRISMA_CLIENT_ENGINE_TYPE=binary</strong> nas variáveis de ambiente.</li>
+                            <li>REMOVA a variável <strong>PRISMA_CLIENT_ENGINE_TYPE</strong> (para usar 'library' default).</li>
                             <li>Certifique-se que o banco de dados está acessível.</li>
                         </ul>
                     </div>
