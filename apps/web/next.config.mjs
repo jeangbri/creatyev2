@@ -9,7 +9,16 @@ const nextConfig = {
     experimental: {
         serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
         outputFileTracingIncludes: {
-            '/api/**/*': ['../../packages/db/node_modules/.prisma/client/libquery_engine-rhel-openssl-3.0.x.so.node', './node_modules/.prisma/client/libquery_engine-rhel-openssl-3.0.x.so.node'],
+            '/api/**/*': [
+                './node_modules/.prisma/client/**/*',
+                '../../node_modules/.prisma/client/**/*',
+                '../../packages/db/node_modules/.prisma/client/**/*'
+            ],
+            '/**/*': [
+                './node_modules/.prisma/client/**/*',
+                '../../node_modules/.prisma/client/**/*',
+                '../../packages/db/node_modules/.prisma/client/**/*'
+            ]
         },
     },
     transpilePackages: ["@repo/db"],
