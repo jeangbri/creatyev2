@@ -8,10 +8,21 @@ export async function middleware(request: NextRequest) {
         },
     })
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
+        console.error('Middleware Error: Missing Supabase Environment Variables')
+        return NextResponse.json({
+            error: 'Server Configuration Error',
+            message: 'Missing env vars: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Please configure them in your deployment settings (Vercel).'
+        }, { status: 500 })
+    }
+
     // Refresh session
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        supabaseUrl,
+        supabaseKey,
         {
             cookies: {
                 get(name: string) {
