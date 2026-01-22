@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { instagramQueue } from "@/lib/queue";
 import crypto from "crypto";
 
+export const runtime = "nodejs";
+
 // Verification Helper
 function verifySignature(body: string, signature: string, secret: string) {
     if (!signature) return false;
