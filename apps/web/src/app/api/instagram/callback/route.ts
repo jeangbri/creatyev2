@@ -1,3 +1,4 @@
+// Test URL: /api/instagram/callback?hub.mode=subscribe&hub.verify_token=creatye_verify_token&hub.challenge=123456
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { encrypt, decrypt } from "@/lib/encryption";
@@ -6,6 +7,23 @@ export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
+
+    // --- Webhook Verification Logic ---
+    const mode = searchParams.get("hub.mode");
+    const token = searchParams.get("hub.verify_token");
+    const challenge = searchParams.get("hub.challenge");
+
+    if (mode === "subscribe") {
+        if (token === process.env.IG_VERIFY_TOKEN && challenge) {
+            return new NextResponse(challenge, {
+                status: 200,
+                headers: { "content-type": "text/plain; charset=utf-8" },
+            });
+        }
+        return new NextResponse("Forbidden", { status: 403 });
+    }
+    // ----------------------------------
+
     const code = searchParams.get("code");
     const state = searchParams.get("state");
     const error = searchParams.get("error");
