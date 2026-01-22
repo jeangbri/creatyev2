@@ -6,6 +6,7 @@ import { Zap, Activity, MessageSquare } from "lucide-react";
 import { ServerConfigError } from "@/components/ServerConfigError";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
     try {

@@ -4,6 +4,8 @@ import { getPrimaryWorkspace } from "@/lib/workspace";
 import { encrypt } from "@/lib/encryption";
 import crypto from 'crypto';
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
