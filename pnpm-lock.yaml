@@ -183,17 +183,10 @@ importers:
         version: 5.9.3
 
   packages/db:
-    dependencies:
-      '@prisma/client':
-        specifier: ^5.10.0
-        version: 5.22.0(prisma@5.22.0)
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.30
-      prisma:
-        specifier: ^5.10.0
-        version: 5.22.0
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
