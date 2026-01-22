@@ -1,6 +1,9 @@
+import { spawn } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const { spawn } = require('child_process');
-const path = require('path');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 if (!process.env.DATABASE_URL) {
     console.warn('⚠️  DATABASE_URL environment variable is missing.');
@@ -11,13 +14,7 @@ if (!process.env.DATABASE_URL) {
 
 console.log('✅ DATABASE_URL found. Running prisma generate...');
 
-const prismaPath = path.resolve(__dirname, '../node_modules/.bin/prisma');
-// Use npx or direct path? straightforward spawn 'prisma' might rely on path.
-// Better to use 'npx prisma' or just 'prisma' if in scripts.
-// The user asked to spawn prisma generate. 
-// Let's use 'npx prisma generate' for safety or just 'prisma' if we trust path.
-// Given we are running via npm script "node ...", we can spawn the command.
-
+// Use npx to ensure we use the local prisma binary
 const child = spawn('npx', ['prisma', 'generate', '--schema=./prisma/schema.prisma'], {
     stdio: 'inherit',
     shell: true,
@@ -25,5 +22,5 @@ const child = spawn('npx', ['prisma', 'generate', '--schema=./prisma/schema.pris
 });
 
 child.on('close', (code) => {
-    process.exit(code);
+    process.exit(code ?? 0);
 });
