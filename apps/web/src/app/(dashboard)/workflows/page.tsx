@@ -8,6 +8,8 @@ import { Plus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+export const dynamic = "force-dynamic";
+
 export default async function WorkflowsPage() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
