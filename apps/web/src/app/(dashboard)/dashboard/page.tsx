@@ -97,6 +97,10 @@ export default async function DashboardPage() {
         )
     } catch (error: any) {
         console.error("Dashboard Error:", error);
-        return <ServerConfigError details={error?.message || "Erro desconhecido"} />;
+        return <ServerConfigError details={{
+            message: error?.message || "Erro desconhecido",
+            env_engine: process.env.PRISMA_CLIENT_ENGINE_TYPE,
+            env_node: process.env.NODE_ENV
+        }} />;
     }
 }
