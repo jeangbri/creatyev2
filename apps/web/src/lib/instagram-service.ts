@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/encryption";
 
-const IG_API_URL = "https://graph.facebook.com/v21.0";
+const IG_API_URL = "https://graph.instagram.com/v21.0";
 
 export async function processInstagramEvent(body: any, signature: string | null) {
     // 1. Log basics
