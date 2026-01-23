@@ -312,19 +312,76 @@ function FlowEditor() {
                                 </div>
                             </div>
 
-                            {/* Image URL (Optional) */}
+                            {/* Image Configuration */}
                             <div className="space-y-3">
-                                <label className="text-sm font-medium text-slate-700">Imagem (URL)</label>
-                                <Input
-                                    className="bg-slate-50 border-slate-200"
-                                    placeholder="https://..."
-                                    value={(selectedNode.data as any).content?.imageUrl || ''}
-                                    onChange={(e) => {
-                                        updateNodeData(selectedNode.id, {
-                                            content: { ...(selectedNode.data as any).content, imageUrl: e.target.value }
-                                        });
-                                    }}
-                                />
+                                <label className="text-sm font-medium text-slate-700">Imagem</label>
+                                <Tabs defaultValue={(selectedNode.data as any).content?.imageUrl?.includes('supabase') ? 'upload' : 'url'} className="w-full">
+                                    <TabsList className="grid w-full grid-cols-2 bg-slate-100">
+                                        <TabsTrigger value="url">URL Externa</TabsTrigger>
+                                        <TabsTrigger value="upload">Upload</TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent value="url" className="mt-4 space-y-2">
+                                        <Input
+                                            className="bg-slate-50 border-slate-200"
+                                            placeholder="https://..."
+                                            value={(selectedNode.data as any).content?.imageUrl || ''}
+                                            onChange={(e) => {
+                                                updateNodeData(selectedNode.id, {
+                                                    content: { ...(selectedNode.data as any).content, imageUrl: e.target.value }
+                                                });
+                                            }}
+                                        />
+                                        <p className="text-xs text-muted-foreground">Cole o link de uma imagem hospedada publicamente.</p>
+                                    </TabsContent>
+                                    <TabsContent value="upload" className="mt-4 space-y-4">
+                                        <div className="flex flex-col gap-3">
+                                            <Input
+                                                type="file"
+                                                accept="image/*"
+                                                className="cursor-pointer bg-slate-50 border-slate-200 file:text-blue-600 file:font-semibold file:bg-blue-50 file:rounded-md file:border-0 file:mr-4 file:px-4 file:py-1"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    const formData = new FormData();
+                                                    formData.append("file", file);
+
+                                                    const promise = fetch('/api/upload', {
+                                                        method: 'POST',
+                                                        body: formData
+                                                    }).then(async (res) => {
+                                                        if (!res.ok) {
+                                                            const err = await res.json();
+                                                            throw new Error(err.error || 'Falha no upload');
+                                                        }
+                                                        return res.json();
+                                                    });
+
+                                                    toast.promise(promise, {
+                                                        loading: 'Enviando imagem...',
+                                                        success: (data) => {
+                                                            updateNodeData(selectedNode.id, {
+                                                                content: { ...(selectedNode.data as any).content, imageUrl: data.url }
+                                                            });
+                                                            return 'Imagem enviada com sucesso!';
+                                                        },
+                                                        error: (err) => `Erro: ${err.message}`
+                                                    });
+                                                }}
+                                            />
+                                            {(selectedNode.data as any).content?.imageUrl && (
+                                                <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-slate-100">
+                                                    <img
+                                                        src={(selectedNode.data as any).content?.imageUrl}
+                                                        alt="Preview"
+                                                        className="h-full w-full object-contain"
+                                                    />
+                                                </div>
+                                            )}
+                                            <p className="text-xs text-muted-foreground">O envio será feito para o nosso servidor seguro.</p>
+                                        </div>
+                                    </TabsContent>
+                                </Tabs>
                             </div>
 
 
