@@ -173,10 +173,10 @@ export default function EditorPage() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Mensagem de Resposta</label>
+                                    <label className="text-sm font-medium">Mensagem Direta (DM)</label>
                                     <Textarea
-                                        className="min-h-[150px]"
-                                        placeholder="Olá! Tudo bem?"
+                                        className="min-h-[100px]"
+                                        placeholder="Olá! Tudo bem? Recebi seu comentário."
                                         value={action.configJson.replyMessage || ''}
                                         onChange={(e) => {
                                             const newActions = [...actions];
@@ -189,6 +189,41 @@ export default function EditorPage() {
                                         <Badge variant="outline" className="cursor-pointer">{"{nome}"}</Badge>
                                     </div>
                                 </div>
+
+                                {/* Only show Public Reply option if Feed Trigger is present in the workflow */}
+                                {triggers.some(t => t.type === 'FEED_COMMENT') && (
+                                    <div className="pt-4 border-t space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <label className="text-sm font-medium">Responder comentário público?</label>
+                                                <p className="text-xs text-muted-foreground">Além da DM, responder também no comentário.</p>
+                                            </div>
+                                            <Switch
+                                                checked={!!action.configJson.enableCommentReply}
+                                                onCheckedChange={(checked) => {
+                                                    const newActions = [...actions];
+                                                    newActions[idx].configJson.enableCommentReply = checked;
+                                                    setActions(newActions);
+                                                }}
+                                            />
+                                        </div>
+
+                                        {action.configJson.enableCommentReply && (
+                                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                                <label className="text-sm font-medium">Texto da Resposta Pública</label>
+                                                <Input
+                                                    placeholder="Te chamei no direct! 👀"
+                                                    value={action.configJson.commentReplyMessage || ''}
+                                                    onChange={(e) => {
+                                                        const newActions = [...actions];
+                                                        newActions[idx].configJson.commentReplyMessage = e.target.value;
+                                                        setActions(newActions);
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     ))}

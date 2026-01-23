@@ -5,15 +5,15 @@
   "/api/workflows/route": "app/api/workflows/route.js",
   "/page": "app/page.js",
   "/api/debug/route": "app/api/debug/route.js",
-  "/api/instagram/connect/route": "app/api/instagram/connect/route.js",
   "/api/instagram/media/route": "app/api/instagram/media/route.js",
-  "/api/instagram/callback/route": "app/api/instagram/callback/route.js",
   "/api/webhooks/instagram/route": "app/api/webhooks/instagram/route.js",
+  "/api/instagram/connect/route": "app/api/instagram/connect/route.js",
+  "/api/instagram/callback/route": "app/api/instagram/callback/route.js",
   "/(dashboard)/settings/integracoes/page": "app/(dashboard)/settings/integracoes/page.js",
-  "/(auth)/registrar/page": "app/(auth)/registrar/page.js",
   "/(auth)/entrar/page": "app/(auth)/entrar/page.js",
-  "/(dashboard)/workflows/[id]/editor/page": "app/(dashboard)/workflows/[id]/editor/page.js",
+  "/(auth)/registrar/page": "app/(auth)/registrar/page.js",
   "/(dashboard)/workflows/create/page": "app/(dashboard)/workflows/create/page.js",
-  "/(dashboard)/workflows/page": "app/(dashboard)/workflows/page.js",
-  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js"
+  "/(dashboard)/workflows/[id]/editor/page": "app/(dashboard)/workflows/[id]/editor/page.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/workflows/page": "app/(dashboard)/workflows/page.js"
 }
