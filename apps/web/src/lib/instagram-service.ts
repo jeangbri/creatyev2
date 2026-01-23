@@ -45,6 +45,9 @@ async function handleDmEvent(accountId: string, event: any) {
 
     if (!account) {
         console.error(`Account not found for recipientId: ${recipientId}`);
+        // DEBUG:
+        const all = await prisma.instagramAccount.findMany({ select: { igUserId: true, username: true } });
+        console.log("ALL AVAILABLE ACCOUNTS:", JSON.stringify(all));
         return;
     }
 
