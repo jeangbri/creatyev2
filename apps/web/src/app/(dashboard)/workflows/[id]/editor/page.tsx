@@ -94,6 +94,9 @@ function FlowEditor() {
 
             if (data.actions && data.actions.length > 0) {
                 data.actions.forEach((action: any, index: number) => {
+                    // Determine initial stats for buttons if present
+                    // (Optional: Could be fetched from real stats if available)
+
                     initialNodes.push({
                         id: `action-${action.id}`,
                         type: 'instagram',
@@ -106,6 +109,7 @@ function FlowEditor() {
                             content: {
                                 message: action.configJson.replyMessage,
                                 cta: action.configJson.cta,
+                                buttons: action.configJson.buttons || [],
                                 imageUrl: action.configJson.imageUrl
                             },
                             originalActionId: action.id // Keep ref to DB ID
@@ -196,6 +200,7 @@ function FlowEditor() {
                     configJson: {
                         replyMessage: d.content?.message,
                         cta: d.content?.cta,
+                        buttons: d.content?.buttons,
                         imageUrl: d.content?.imageUrl,
                         // Preserve other fields?
                     }

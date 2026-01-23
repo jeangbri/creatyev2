@@ -10,13 +10,13 @@ import { cn } from "@/lib/utils";
 
 // Custom Instagram Card Node
 export const InstagramNode = memo(({ data, selected }: NodeProps) => {
-    const {
-        title = 'Cartões',
-        subtitle = 'Envie cartões interativos.',
-        stats = { sent: 0, read: 0, readRate: '0%' },
-        content = {},
-        type = 'reply' // trigger, reply
-    } = data as any;
+    const { content = {}, title, subtitle, type, stats = { sent: 0, readRate: '0%' } } = data as any;
+    const isCard = !!content.imageUrl;
+    const defaultTitle = isCard ? 'Cartões' : 'Botões';
+    const defaultSubtitle = isCard ? 'Envie cartões interativos.' : 'Enviar mensagem com botões';
+
+    const nodeTitle = (title && title !== 'Cartões') ? title : defaultTitle;
+    const nodeSubtitle = (subtitle && subtitle !== 'Envie cartões interativos.') ? subtitle : defaultSubtitle;
 
     return (
         <div className={cn(
@@ -35,12 +35,12 @@ export const InstagramNode = memo(({ data, selected }: NodeProps) => {
 
             {/* Header */}
             <div className="p-4 border-b flex items-start gap-3 bg-slate-50/50 rounded-t-xl">
-                <div className="p-2 bg-pink-100 rounded-lg text-pink-600">
-                    <Instagram size={20} />
+                <div className={cn("p-2 rounded-lg", isCard ? "bg-pink-100 text-pink-600" : "bg-blue-100 text-blue-600")}>
+                    {isCard ? <Instagram size={20} /> : <MessageSquare size={20} />}
                 </div>
                 <div>
-                    <h3 className="font-semibold text-slate-800">{title}</h3>
-                    <p className="text-xs text-slate-500">{subtitle}</p>
+                    <h3 className="font-semibold text-slate-800">{nodeTitle}</h3>
+                    <p className="text-xs text-slate-500">{nodeSubtitle}</p>
                 </div>
             </div>
 
