@@ -36,6 +36,11 @@ async function handleDmEvent(accountId: string, event: any) {
 
     const text = message.text || "";
 
+    const isStoryReply = !!(event.message.reply_to && event.message.reply_to.story);
+    const targetTriggerType = isStoryReply ? "STORY_REPLY" : "DM_RECEIVED";
+
+    console.log(`[IG Service] Handling DM. isStoryReply=${isStoryReply}, targetTriggerType=${targetTriggerType}, text="${text}"`);
+
     // 1. Find the connected account (Recipient)
     // igUserId should match recipientId
     let account = await prisma.instagramAccount.findFirst({
@@ -95,12 +100,14 @@ async function handleDmEvent(accountId: string, event: any) {
         account = foundAccount;
     }
 
+    if (!account) return;
+
     // 2. Log Webhook Event
     const webhookEvent = await prisma.webhookEvent.create({
         data: {
             workspaceId: account.workspaceId,
             platform: "INSTAGRAM",
-            eventType: "DM_RECEIVED",
+            eventType: isStoryReply ? "STORY_REPLY" : "DM_RECEIVED",
             platformEventId: event.mid || `dm_${Date.now()}_${Math.random()}`, // Message ID
             payloadJson: event,
             signatureValid: true, // We assume validated in route
@@ -116,7 +123,7 @@ async function handleDmEvent(accountId: string, event: any) {
             status: "PUBLISHED",
             triggers: {
                 some: {
-                    type: "DM_RECEIVED"
+                    type: targetTriggerType
                 }
             }
         },
@@ -128,7 +135,7 @@ async function handleDmEvent(accountId: string, event: any) {
 
     // 4. Match Triggers
     for (const workflow of workflows) {
-        const trigger = workflow.triggers.find(t => t.type === "DM_RECEIVED");
+        const trigger = workflow.triggers.find(t => t.type === targetTriggerType);
         if (!trigger) continue;
 
         const config = trigger.configJson as any;

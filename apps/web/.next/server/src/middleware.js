@@ -17356,8 +17356,14 @@ async function middleware(request) {
             headers: request.headers
         }
     });
+    const supabaseUrl = "https://sloqbvhshesxngefuoxy.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsb3FidmhzaGVzeG5nZWZ1b3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwNjA3NzksImV4cCI6MjA4NDYzNjc3OX0.qzOLhHR3NOXXkcFjJAuPZvdj8JdBC41Ecf3YaySLQq0";
+    if (!supabaseUrl || !supabaseKey) {
+        console.warn("Middleware Warning: Missing Supabase Environment Variables. Skipping auth check.");
+        return response;
+    }
     // Refresh session
-    const supabase = createServerClient("https://sloqbvhshesxngefuoxy.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsb3FidmhzaGVzeG5nZWZ1b3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwNjA3NzksImV4cCI6MjA4NDYzNjc3OX0.qzOLhHR3NOXXkcFjJAuPZvdj8JdBC41Ecf3YaySLQq0", {
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
         cookies: {
             get (name) {
                 return request.cookies.get(name)?.value;
