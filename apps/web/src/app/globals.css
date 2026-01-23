@@ -66,6 +66,9 @@
   }
 }
 
+
+@import '@xyflow/react/dist/style.css';
+
 @layer base {
   * {
     @apply border-border;
@@ -74,3 +77,4 @@
     @apply bg-background text-foreground;
   }
 }
+
