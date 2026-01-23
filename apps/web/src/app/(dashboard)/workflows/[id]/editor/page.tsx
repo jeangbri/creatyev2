@@ -33,7 +33,15 @@ export default function EditorPage() {
         if (res.ok) {
             const data = await res.json();
             setWorkflow(data.workflow);
-            setTriggers(data.triggers);
+            // Prepare triggers for UI: convert keyword array to string
+            const uiTriggers = data.triggers.map((t: any) => {
+                if (Array.isArray(t.configJson.keywords)) {
+                    // Ensure we have a string for the input
+                    t.configJson.keywords = t.configJson.keywords.join(', ');
+                }
+                return t;
+            });
+            setTriggers(uiTriggers);
             setActions(data.actions);
         }
         setLoading(false);
@@ -42,6 +50,20 @@ export default function EditorPage() {
     const handleSave = async (publish = false) => {
         setSaving(true);
         try {
+            // Prepare triggers for API: convert keyword string back to array
+            const apiTriggers = triggers.map(t => {
+                const trigger = JSON.parse(JSON.stringify(t));
+                if (typeof trigger.configJson.keywords === 'string') {
+                    trigger.configJson.keywords = trigger.configJson.keywords
+                        .split(',')
+                        .map((k: string) => k.trim())
+                        .filter((k: string) => k !== '');
+                } else if (!trigger.configJson.keywords) {
+                    trigger.configJson.keywords = [];
+                }
+                return trigger;
+            });
+
             const res = await fetch(`/api/workflows/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -49,7 +71,7 @@ export default function EditorPage() {
                     workflow: {
                         status: publish ? 'PUBLISHED' : workflow.status
                     },
-                    triggers,
+                    triggers: apiTriggers,
                     actions
                 })
             });
@@ -57,7 +79,9 @@ export default function EditorPage() {
             if (!res.ok) throw new Error("Erro ao salvar");
 
             toast.success(publish ? "Automação Publicada!" : "Salvo com sucesso!");
-            fetchWorkflow();
+            if (publish) {
+                setWorkflow({ ...workflow, status: 'PUBLISHED' });
+            }
         } catch (e) {
             toast.error("Erro ao salvar");
         } finally {
@@ -122,28 +146,13 @@ export default function EditorPage() {
                                     <label className="text-sm font-medium">Palavras-chave (separadas por vírgula)</label>
                                     <Input
                                         placeholder="Ex: preço, valor, comprar"
-                                        value={(trigger.configJson.keywords || []).join(', ')}
+                                        value={trigger.configJson.keywords || ''}
                                         onChange={(e) => {
                                             const val = e.target.value;
-                                            const keywords = val.split(',').map((k: string) => k.trim()).filter(Boolean);
                                             const newTriggers = [...triggers];
-                                            newTriggers[idx].configJson.keywords = keywords;
-                                            // Store raw input somewhere if needed for smooth editing, 
-                                            // but splitting on change is okay for simple UI if we accept array
-                                            // Better: Allow loose typing for now
-                                            // Actually, saving array on every keystroke with comma split is tricky.
-                                            // For this prototype, I'll store it as is on blur or just trust the split.
-                                            // Let's simpler: Just text input and split on save? 
-                                            // No, I'm updating state directly.
-                                            // I'll make a local state for input if I want to match standard UX, 
-                                            // but here I'll just join/split.
+                                            newTriggers[idx].configJson.keywords = val;
+                                            setTriggers(newTriggers);
                                         }}
-                                    // OnChange properly:
-                                    // It's hard to edit "a, b" if we split immediately.
-                                    // Let's implement a KeywordInput component or just Textarea?
-                                    // I'll use a simple controlled input that doesn't split until save?
-                                    // But my state expects structure. 
-                                    // I'll just use a generic configJson editing approach:
                                     />
                                     <p className="text-xs text-muted-foreground">Deixe vazio para responder a TUDO.</p>
                                 </div>

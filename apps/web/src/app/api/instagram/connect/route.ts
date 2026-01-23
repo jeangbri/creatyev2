@@ -73,7 +73,14 @@ export async function GET(req: NextRequest) {
         'instagram_business_content_publish'
     ].join(',');
 
-    const url = `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${appId}&redirect_uri=${redirectUri}&scope=${scopes}&response_type=code&state=${state}`;
+    const authUrl = new URL('https://www.instagram.com/oauth/authorize');
+    authUrl.searchParams.append('enable_fb_login', '0');
+    authUrl.searchParams.append('force_authentication', '1');
+    authUrl.searchParams.append('client_id', appId);
+    authUrl.searchParams.append('redirect_uri', redirectUri);
+    authUrl.searchParams.append('scope', scopes);
+    authUrl.searchParams.append('response_type', 'code');
+    authUrl.searchParams.append('state', state);
 
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(authUrl.toString());
 }
