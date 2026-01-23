@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { toast } from 'sonner'
-import { Save, Play, ArrowLeft } from 'lucide-react'
+import { Save, Play, ArrowLeft, Trash2, Plus, Info, Braces } from 'lucide-react'
 import Link from 'next/link'
 import {
     ReactFlow,
@@ -29,6 +29,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command"
 
 // Node Types Registry
 const nodeTypes = {
@@ -53,8 +55,8 @@ function FlowEditor() {
     const [selectedNode, setSelectedNode] = useState<Node | null>(null);
 
     // React Flow State
-    const [nodes, setNodes, onNodesChange] = useNodesState([]);
-    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+    const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
     useEffect(() => {
         fetchWorkflow();
@@ -296,9 +298,44 @@ function FlowEditor() {
                         <div className="space-y-6">
                             {/* Message Content */}
                             <div className="space-y-3">
-                                <label className="text-sm font-medium text-slate-700">Mensagem</label>
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium text-slate-700">Mensagem</label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                                <Braces className="w-3 h-3" /> Variáveis
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[200px] p-0" align="end">
+                                            <Command>
+                                                <CommandInput placeholder="Buscar variável..." />
+                                                <CommandList>
+                                                    <CommandEmpty>Nenhuma variável.</CommandEmpty>
+                                                    <CommandGroup heading="Contato">
+                                                        <CommandItem onSelect={() => {
+                                                            const currentMsg = (selectedNode.data as any).content?.message || '';
+                                                            updateNodeData(selectedNode.id, {
+                                                                content: { ...(selectedNode.data as any).content, message: currentMsg + " {nome}" }
+                                                            });
+                                                        }}>
+                                                            Nome
+                                                        </CommandItem>
+                                                        <CommandItem onSelect={() => {
+                                                            const currentMsg = (selectedNode.data as any).content?.message || '';
+                                                            updateNodeData(selectedNode.id, {
+                                                                content: { ...(selectedNode.data as any).content, message: currentMsg + " {username}" }
+                                                            });
+                                                        }}>
+                                                            Username
+                                                        </CommandItem>
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
                                 <Textarea
-                                    className="min-h-[120px] bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                                    className="min-h-[120px] bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-blue-500 font-normal text-sm"
                                     placeholder="Digite sua mensagem..."
                                     value={(selectedNode.data as any).content?.message || ''}
                                     onChange={(e) => {
@@ -308,7 +345,10 @@ function FlowEditor() {
                                     }}
                                 />
                                 <div className="flex justify-between text-xs text-slate-400">
-                                    <span>Variáveis: {"{nome}"}</span>
+                                    <div className="flex items-center gap-1">
+                                        <Info className="w-3 h-3" />
+                                        <span>Use {"{nome}"} para personalizar</span>
+                                    </div>
                                     <span>{((selectedNode.data as any).content?.message || '').length} caracteres</span>
                                 </div>
                             </div>
@@ -386,64 +426,81 @@ function FlowEditor() {
                             </div>
 
 
-                            {/* Buttons / CTA */}
+                            {/* Buttons List Configuration */}
                             <div className="pt-6 border-t border-slate-100 space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-sm font-medium text-slate-700">Botão (Link)</label>
-                                    <Switch
-                                        checked={!!(selectedNode.data as any).content?.cta?.enabled}
-                                        onCheckedChange={(checked) => {
-                                            const currentContent = (selectedNode.data as any).content || {};
-                                            const currentCta = currentContent.cta || {};
+                                <label className="text-sm font-medium text-slate-700">Botões</label>
+
+                                {((selectedNode.data as any).content?.buttons || []).map((btn: any, index: number) => (
+                                    <div key={index} className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 relative group animate-in fade-in slide-in-from-top-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute top-2 right-2 h-6 w-6 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => {
+                                                const currentButtons = [...((selectedNode.data as any).content?.buttons || [])];
+                                                currentButtons.splice(index, 1);
+                                                updateNodeData(selectedNode.id, {
+                                                    content: { ...(selectedNode.data as any).content, buttons: currentButtons }
+                                                });
+                                            }}
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </Button>
+
+                                        <div className="space-y-1">
+                                            <Input
+                                                className="bg-white"
+                                                placeholder="Nome do botão"
+                                                value={btn.label || ''}
+                                                onChange={(e) => {
+                                                    const currentButtons = [...((selectedNode.data as any).content?.buttons || [])];
+                                                    currentButtons[index] = { ...currentButtons[index], label: e.target.value };
+                                                    updateNodeData(selectedNode.id, {
+                                                        content: { ...(selectedNode.data as any).content, buttons: currentButtons }
+                                                    });
+                                                }}
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <Switch
+                                                id={`link-ext-${index}`}
+                                                checked={true} // For now always link external for Instagram Button Template (web_url)
+                                                disabled
+                                                className="scale-75"
+                                            />
+                                            <label htmlFor={`link-ext-${index}`} className="text-xs text-slate-600 cursor-pointer">Link externo</label>
+                                        </div>
+
+                                        <Input
+                                            className="bg-white text-xs h-8"
+                                            placeholder="https://..."
+                                            value={btn.url || ''}
+                                            onChange={(e) => {
+                                                const currentButtons = [...((selectedNode.data as any).content?.buttons || [])];
+                                                currentButtons[index] = { ...currentButtons[index], url: e.target.value };
+                                                updateNodeData(selectedNode.id, {
+                                                    content: { ...(selectedNode.data as any).content, buttons: currentButtons }
+                                                });
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+
+                                {((selectedNode.data as any).content?.buttons?.length || 0) < 3 && (
+                                    <Button
+                                        variant="outline"
+                                        className="w-full border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50"
+                                        onClick={() => {
+                                            const currentButtons = [...((selectedNode.data as any).content?.buttons || [])];
+                                            currentButtons.push({ label: '', url: '', type: 'web_url' });
                                             updateNodeData(selectedNode.id, {
-                                                content: {
-                                                    ...currentContent,
-                                                    cta: { ...currentCta, enabled: checked }
-                                                }
+                                                content: { ...(selectedNode.data as any).content, buttons: currentButtons }
                                             });
                                         }}
-                                    />
-                                </div>
-
-                                {(selectedNode.data as any).content?.cta?.enabled && (
-                                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-medium text-slate-500 uppercase">Texto do Botão</label>
-                                            <Input
-                                                className="bg-slate-50 border-slate-200"
-                                                placeholder="Ex: Clique aqui"
-                                                value={(selectedNode.data as any).content?.cta?.text || ''}
-                                                onChange={(e) => {
-                                                    const currentContent = (selectedNode.data as any).content || {};
-                                                    const currentCta = currentContent.cta || {};
-                                                    updateNodeData(selectedNode.id, {
-                                                        content: {
-                                                            ...currentContent,
-                                                            cta: { ...currentCta, text: e.target.value }
-                                                        }
-                                                    });
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-medium text-slate-500 uppercase">Link de Destino</label>
-                                            <Input
-                                                className="bg-slate-50 border-slate-200"
-                                                placeholder="https://..."
-                                                value={(selectedNode.data as any).content?.cta?.url || ''}
-                                                onChange={(e) => {
-                                                    const currentContent = (selectedNode.data as any).content || {};
-                                                    const currentCta = currentContent.cta || {};
-                                                    updateNodeData(selectedNode.id, {
-                                                        content: {
-                                                            ...currentContent,
-                                                            cta: { ...currentCta, url: e.target.value }
-                                                        }
-                                                    });
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" /> Adicionar botão
+                                    </Button>
                                 )}
                             </div>
                         </div>

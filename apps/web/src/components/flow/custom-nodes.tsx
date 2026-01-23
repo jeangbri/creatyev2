@@ -78,7 +78,26 @@ export const InstagramNode = memo(({ data, selected }: NodeProps) => {
                     </p>
 
                     {/* Button(s) Preview */}
-                    {content.cta?.enabled && (
+                    {(content.buttons && content.buttons.length > 0) ? (
+                        <div className="mt-3 space-y-2">
+                            {content.buttons.map((btn: any, idx: number) => (
+                                <Button
+                                    key={idx}
+                                    variant="outline"
+                                    className="w-full justify-between bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700 h-10"
+                                >
+                                    <span className="text-xs font-bold uppercase tracking-wider truncate max-w-[200px]">
+                                        {btn.label || "Botão"}
+                                    </span>
+                                    {btn.stats && (
+                                        <Badge variant="secondary" className="bg-blue-200 text-blue-700 hover:bg-blue-300">
+                                            {btn.stats}
+                                        </Badge>
+                                    )}
+                                </Button>
+                            ))}
+                        </div>
+                    ) : content.cta?.enabled && (
                         <div className="mt-3">
                             <Button
                                 variant="outline"
@@ -87,11 +106,6 @@ export const InstagramNode = memo(({ data, selected }: NodeProps) => {
                                 <span className="text-xs font-bold uppercase tracking-wider">
                                     {content.cta.text || "Botão"}
                                 </span>
-                                {content.cta.stats && (
-                                    <Badge variant="secondary" className="bg-blue-200 text-blue-700 hover:bg-blue-300">
-                                        {content.cta.stats}
-                                    </Badge>
-                                )}
                             </Button>
                         </div>
                     )}

@@ -302,23 +302,22 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
                 // 1. Send DM (Private Reply if commentId exists)
                 // Always send if replyMessage is present (User expectation: "DM message")
                 const replyText = config.replyMessage;
-                const cta = (config.cta && config.cta.enabled && config.cta.text && config.cta.url)
-                    ? { text: config.cta.text, url: config.cta.url }
-                    : undefined;
+                // Support multiple buttons if 'buttons' array exists, otherwise fallback to legacy 'cta'
+                let buttons = config.buttons || [];
+                if ((!buttons || buttons.length === 0) && config.cta && config.cta.enabled && config.cta.text && config.cta.url) {
+                    buttons = [{ label: config.cta.text, url: config.cta.url, type: 'web_url' }];
+                }
 
                 if (replyText) {
                     if (commentId) {
                         try {
-                            await sendPrivateReply(account, commentId, replyText, cta);
+                            await sendPrivateReply(account, commentId, replyText, buttons);
                         } catch (e: any) {
-                            // Fallback? If Private Reply fails, maybe try standard DM? 
-                            // But usually strict 7 day window applies to Private Reply, and 24h to standard.
-                            // If Private fails, standard likely fails too unless recently interacted.
                             console.error("Private Reply failed, attempting standard DM fallback", e);
-                            await sendDm(account, recipientId, replyText, cta);
+                            await sendDm(account, recipientId, replyText, buttons);
                         }
                     } else {
-                        await sendDm(account, recipientId, replyText, cta);
+                        await sendDm(account, recipientId, replyText, buttons);
                     }
                 }
 
@@ -346,16 +345,16 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
     }
 }
 
-async function sendDm(account: any, recipientId: string, text: string, cta?: { text: string, url: string }) {
+async function sendDm(account: any, recipientId: string, text: string, buttons?: any[]) {
     let accessToken = decrypt(account.accessTokenEncrypted).trim();
 
-    console.log(`[IG Service] Sending DM to ${recipientId} (Has CTA: ${!!cta})...`);
+    console.log(`[IG Service] Sending DM to ${recipientId}. Buttons: ${buttons?.length || 0}`);
 
     const url = `${IG_API_URL}/me/messages?access_token=${accessToken}`;
 
     let body;
 
-    if (cta) {
+    if (buttons && buttons.length > 0) {
         body = {
             recipient: { id: recipientId },
             message: {
@@ -364,13 +363,11 @@ async function sendDm(account: any, recipientId: string, text: string, cta?: { t
                     payload: {
                         template_type: "button",
                         text: text, // Button template text (max 640 chars)
-                        buttons: [
-                            {
-                                type: "web_url",
-                                url: cta.url,
-                                title: cta.text
-                            }
-                        ]
+                        buttons: buttons.map(b => ({
+                            type: "web_url", // Currently strictly web_url based on UI
+                            url: b.url,
+                            title: b.label
+                        }))
                     }
                 }
             }
@@ -392,20 +389,17 @@ async function sendDm(account: any, recipientId: string, text: string, cta?: { t
     return data;
 }
 
-async function sendPrivateReply(account: any, commentId: string, text: string, cta?: { text: string, url: string }) {
+async function sendPrivateReply(account: any, commentId: string, text: string, buttons?: any[]) {
     let accessToken = decrypt(account.accessTokenEncrypted).trim();
 
-    console.log(`[IG Service] Sending Private Reply to Comment ${commentId} (Has CTA: ${!!cta})...`);
+    console.log(`[IG Service] Sending Private Reply to Comment ${commentId}. Buttons: ${buttons?.length || 0}`);
 
     const url = `${IG_API_URL}/me/messages?access_token=${accessToken}`;
 
     let body;
 
-    if (cta) {
+    if (buttons && buttons.length > 0) {
         // Attempting Button Template for Private Reply
-        // Note: If this fails, we might need to fallback to text only.
-        // Instagram documentation is sparse on Private Reply attachment support.
-        // But generally, it mimics the messaging API.
         body = {
             recipient: { comment_id: commentId },
             message: {
@@ -414,13 +408,11 @@ async function sendPrivateReply(account: any, commentId: string, text: string, c
                     payload: {
                         template_type: "button",
                         text: text,
-                        buttons: [
-                            {
-                                type: "web_url",
-                                url: cta.url,
-                                title: cta.text
-                            }
-                        ]
+                        buttons: buttons.map(b => ({
+                            type: "web_url",
+                            url: b.url,
+                            title: b.label
+                        }))
                     }
                 }
             }
