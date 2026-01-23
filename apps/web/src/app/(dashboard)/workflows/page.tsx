@@ -3,10 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getPrimaryWorkspace } from "@/lib/workspace";
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Plus } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { WorkflowCard } from "@/components/workflow-card";
 
 export const dynamic = "force-dynamic";
 
@@ -43,25 +41,16 @@ export default async function WorkflowsPage() {
                         Você ainda não tem automações. Crie a primeira!
                     </div>
                 )}
-                {workflows.map((wf: any) => (
-                    <Card key={wf.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                        <Link href={`/workflows/${wf.id}/editor`}>
-                            <CardHeader className="pb-2">
-                                <div className="flex justify-between items-start">
-                                    <CardTitle className="text-lg truncate pr-2">{wf.title}</CardTitle>
-                                    <div className={`w-3 h-3 rounded-full ${wf.isActive ? 'bg-green-500' : 'bg-gray-300'}`} title={wf.isActive ? "Ativo" : "Inativo"} />
-                                </div>
-                                <CardDescription className="line-clamp-2 min-h-[40px]">{wf.description || "Sem descrição"}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-xs text-muted-foreground space-y-1">
-                                    <p>Canais: {JSON.parse(JSON.stringify(wf.channels)).join(', ')}</p>
-                                    <p>Execuções: {wf.runCount}</p>
-                                    <p>Atualizado em: {format(wf.updatedAt, "d 'de' MMMM 'às' HH:mm", { locale: ptBR })}</p>
-                                </div>
-                            </CardContent>
-                        </Link>
-                    </Card>
+                {workflows.map((wf) => (
+                    <WorkflowCard
+                        key={wf.id}
+                        workflow={{
+                            ...wf,
+                            updatedAt: wf.updatedAt.toISOString(),
+                            createdAt: wf.createdAt.toISOString(),
+                            publishedAt: wf.publishedAt ? wf.publishedAt.toISOString() : null
+                        }}
+                    />
                 ))}
             </div>
         </div>

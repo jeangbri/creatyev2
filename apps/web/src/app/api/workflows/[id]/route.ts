@@ -75,3 +75,43 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+    const supabase = createClient();
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        // Check ownership
+        const workflow = await prisma.workflow.findUnique({
+            where: { id: params.id },
+            include: {
+                workspace: {
+                    select: {
+                        members: {
+                            where: { userId: user.id }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!workflow || workflow.workspace.members.length === 0) {
+            return NextResponse.json({ error: "Not found or not authorized" }, { status: 404 });
+        }
+
+        // Delete related data first
+        await prisma.workflowTrigger.deleteMany({ where: { workflowId: params.id } });
+        await prisma.workflowAction.deleteMany({ where: { workflowId: params.id } });
+        await prisma.automationRun.deleteMany({ where: { workflowId: params.id } });
+
+        await prisma.workflow.delete({
+            where: { id: params.id }
+        });
+
+        return NextResponse.json({ ok: true });
+    } catch (error: any) {
+        console.error("Delete workflow error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
