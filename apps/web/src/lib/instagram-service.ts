@@ -38,7 +38,7 @@ async function handleDmEvent(accountId: string, event: any) {
 
     // 1. Find the connected account (Recipient)
     // igUserId should match recipientId
-    const account = await prisma.instagramAccount.findFirst({
+    let account = await prisma.instagramAccount.findFirst({
         where: { igUserId: recipientId },
         include: { workspace: true }
     });
