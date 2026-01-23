@@ -201,7 +201,10 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
 }
 
 async function sendDm(account: any, recipientId: string, text: string) {
-    let accessToken = decrypt(account.accessTokenEncrypted);
+    let accessToken = decrypt(account.accessTokenEncrypted).trim();
+
+    // Debug: Log token prefix to verify decryption
+    console.log(`[IG Service] Sending DM with token prefix: ${accessToken.substring(0, 10)}... (Length: ${accessToken.length})`);
 
     // Replace variables
     // Simple replacement for now. {nome} is hard because we need to fetch user profile first.
@@ -223,6 +226,10 @@ async function sendDm(account: any, recipientId: string, text: string) {
     const data = await res.json();
 
     if (!res.ok) {
+        console.error("[IG Service] DM Send Failed:", JSON.stringify(data));
+
+        // Retry logic for expired token could go here (TODO)
+
         throw new Error(`Failed to send DM: ${JSON.stringify(data)}`);
     }
 
