@@ -296,18 +296,31 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
 
     try {
         for (const action of workflow.actions) {
-            // We treat SEND_DM as "Reply" generally.
-            // If we have a commentId, we try to reply to the comment.
-            // If not, we send a DM.
             if (action.type === "SEND_DM" || action.type === "REPLY_COMMENT") {
                 const config = action.configJson as any;
+
+                // 1. Send DM (Private Reply if commentId exists)
+                // Always send if replyMessage is present (User expectation: "DM message")
                 const replyText = config.replyMessage;
                 if (replyText) {
                     if (commentId) {
-                        await replyToComment(account, commentId, replyText);
+                        try {
+                            await sendPrivateReply(account, commentId, replyText);
+                        } catch (e: any) {
+                            // Fallback? If Private Reply fails, maybe try standard DM? 
+                            // But usually strict 7 day window applies to Private Reply, and 24h to standard.
+                            // If Private fails, standard likely fails too unless recently interacted.
+                            console.error("Private Reply failed, attempting standard DM fallback", e);
+                            await sendDm(account, recipientId, replyText);
+                        }
                     } else {
                         await sendDm(account, recipientId, replyText);
                     }
+                }
+
+                // 2. Public Comment Reply (Optional)
+                if (commentId && config.enableCommentReply && config.commentReplyMessage) {
+                    await replyToComment(account, commentId, config.commentReplyMessage);
                 }
             }
         }
@@ -332,8 +345,7 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
 async function sendDm(account: any, recipientId: string, text: string) {
     let accessToken = decrypt(account.accessTokenEncrypted).trim();
 
-    // Debug: Log token prefix to verify decryption
-    console.log(`[IG Service] Sending DM with token prefix: ${accessToken.substring(0, 10)}...`);
+    console.log(`[IG Service] Sending DM to ${recipientId}...`);
 
     const url = `${IG_API_URL}/me/messages?access_token=${accessToken}`;
 
@@ -342,46 +354,54 @@ async function sendDm(account: any, recipientId: string, text: string) {
         message: { text: text }
     };
 
-    const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    });
-
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json();
 
     if (!res.ok) {
         console.error("[IG Service] DM Send Failed:", JSON.stringify(data));
         throw new Error(`Failed to send DM: ${JSON.stringify(data)}`);
     }
+    return data;
+}
 
+async function sendPrivateReply(account: any, commentId: string, text: string) {
+    let accessToken = decrypt(account.accessTokenEncrypted).trim();
+
+    console.log(`[IG Service] Sending Private Reply to Comment ${commentId}...`);
+
+    const url = `${IG_API_URL}/me/messages?access_token=${accessToken}`;
+
+    const body = {
+        recipient: { comment_id: commentId },
+        message: { text: text }
+    };
+
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json();
+
+    if (!res.ok) {
+        console.error("[IG Service] Private Reply Failed:", JSON.stringify(data));
+        throw new Error(`Failed to send Private Reply: ${JSON.stringify(data)}`);
+    }
     return data;
 }
 
 async function replyToComment(account: any, commentId: string, text: string) {
     let accessToken = decrypt(account.accessTokenEncrypted).trim();
 
-    console.log(`[IG Service] Replying to Comment ${commentId}.`);
+    console.log(`[IG Service] Public Reply to Comment ${commentId}.`);
 
     const url = `${IG_API_URL}/${commentId}/replies?access_token=${accessToken}`;
 
-    const body = {
-        message: text
-    };
+    const body = { message: text };
 
-    const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    });
-
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json();
 
     if (!res.ok) {
-        console.error("[IG Service] Comment Reply Failed:", JSON.stringify(data));
+        console.error("[IG Service] Public Comment Reply Failed:", JSON.stringify(data));
         throw new Error(`Failed to reply to comment: ${JSON.stringify(data)}`);
     }
-
     return data;
 }
 

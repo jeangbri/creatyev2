@@ -1,1 +1,1 @@
-{"version":1,"functions":{"/api/instagram/connect":{},"/api/debug":{},"/api/instagram/media":{},"/api/instagram/callback":{},"/dashboard":{},"/workflows":{},"/api/webhooks/instagram":{}}}
+{"version":1,"functions":{"/api/instagram/connect":{},"/api/instagram/callback":{},"/api/debug":{},"/api/instagram/media":{},"/workflows":{},"/api/webhooks/instagram":{},"/dashboard":{}}}
