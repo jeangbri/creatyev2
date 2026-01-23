@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { title, description, channels } = body; // channels: ['dm', 'feed']
+    const { title, description, channels, feedConfig } = body; // channels: ['dm', ...], feedConfig?: { targetMediaId: string }
 
     const workspace = await getPrimaryWorkspace(user.id, user.email || '');
 
@@ -54,7 +54,11 @@ export async function POST(req: NextRequest) {
                 type,
                 configJson: {
                     matchMode: 'contains',
-                    keywords: []
+                    keywords: [],
+                    // If this is FEED_COMMENT and we have a specific media ID
+                    posts: (type === 'FEED_COMMENT' && feedConfig?.targetMediaId)
+                        ? [feedConfig.targetMediaId]
+                        : []
                 }
             });
         }

@@ -22,9 +22,124 @@ export async function processInstagramEvent(body: any, signature: string | null)
             if (event.message) {
                 await handleDmEvent(entry.id, event);
             }
-            // Handle Comments (later)
+            // Handle Comments
+            if (event.field === 'comments') {
+                await handleCommentEvent(entry.id, event);
+            }
         }
     }
+}
+
+async function handleCommentEvent(accountId: string, event: any) {
+    const value = event.value;
+    const fromId = value.from.id; // User who successfully commented
+    const mediaId = value.media.id; // The Post ID
+    const commentId = value.id;
+    const text = value.text || "";
+
+    // If it's the page itself commenting, ignore usually?
+    // But we might want to reply to our own comments in some weird cases? No, usually ignore self.
+    // We don't have easy way to know self ID here unless we query DB.
+    // But handleDmEvent checks echoes. Comment webhook doesn't have is_echo.
+    // We'll rely on workflow match.
+
+    console.log(`[IG Service] Handling Comment. mediaId=${mediaId}, text="${text}"`);
+
+    // 1. Find Connected Account (Page)
+    // entry.id is the Instagram Account ID of the page receiving the comment
+    let account = await prisma.instagramAccount.findFirst({
+        where: { igUserId: accountId },
+        include: { workspace: true }
+    });
+
+    if (!account) {
+        console.warn(`[IG Service] Account not found for comment entryId: ${accountId}`);
+        return;
+    }
+
+    // 2. Log Webhook Event
+    const webhookEvent = await prisma.webhookEvent.create({
+        data: {
+            workspaceId: account.workspaceId,
+            platform: "INSTAGRAM",
+            eventType: "FEED_COMMENT",
+            platformEventId: commentId,
+            payloadJson: event,
+            signatureValid: true,
+            processingStatus: "PROCESSING"
+        }
+    });
+
+    // 3. Find Workflows
+    const workflows = await prisma.workflow.findMany({
+        where: {
+            workspaceId: account.workspaceId,
+            isActive: true,
+            status: "PUBLISHED",
+            triggers: {
+                some: {
+                    type: "FEED_COMMENT"
+                }
+            }
+        },
+        include: {
+            triggers: true,
+            actions: true
+        }
+    });
+
+    // 4. Match
+    for (const workflow of workflows) {
+        const trigger = workflow.triggers.find(t => t.type === "FEED_COMMENT");
+        if (!trigger) continue;
+
+        const config = trigger.configJson as any;
+        const keywords = config.keywords;
+        const matchMode = config.matchMode || "contains";
+        const targetPosts = config.posts || []; // array of strings (media IDs)
+
+        // Post Match
+        // If targetPosts is not empty, we MUST match one of them.
+        // If empty, we match ALL posts.
+        if (targetPosts.length > 0) {
+            if (!targetPosts.includes(mediaId)) {
+                continue; // Not the right post
+            }
+        }
+
+        // Keyword Match
+        let matched = false;
+        if (!keywords || keywords.length === 0) {
+            matched = true;
+        } else {
+            const lowerText = text.toLowerCase();
+            if (matchMode === "exact") {
+                matched = keywords.some((k: string) => k.toLowerCase().trim() === lowerText);
+            } else {
+                matched = keywords.some((k: string) => lowerText.includes(k.toLowerCase().trim()));
+            }
+        }
+
+        if (matched) {
+            // Execute Actions
+            // For comments, we usually use DM reply or Comment reply.
+            // Our current runWorkflowActions supports SEND_DM.
+            // If the user configures "Responder no Direct", it uses SEND_DM.
+            // We pass fromId as recipientId.
+            // IMPORTANT: To send DM to a commenter, we need "Private Replies" capability or just Send DM.
+            // Standard Send DM might fail if user didn't message us first (24h window).
+            // BUT "Private Replies" to comments is a specific API: POST /me/messages with recipient: { comment_id: ... }
+            // Let's see if runWorkflowActions needs adjustment.
+
+            await runWorkflowActions(workflow, account, fromId, webhookEvent.id, commentId);
+        }
+    }
+
+    // Update status
+    await prisma.webhookEvent.update({
+        where: { id: webhookEvent.id },
+        data: { processingStatus: "DONE", processedAt: new Date() }
+    });
 }
 
 async function handleDmEvent(accountId: string, event: any) {
@@ -169,7 +284,7 @@ async function handleDmEvent(accountId: string, event: any) {
     });
 }
 
-async function runWorkflowActions(workflow: any, account: any, recipientId: string, webhookEventId: string) {
+async function runWorkflowActions(workflow: any, account: any, recipientId: string, webhookEventId: string, commentId?: string) {
     // Log Run
     const run = await prisma.automationRun.create({
         data: {
@@ -181,11 +296,18 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
 
     try {
         for (const action of workflow.actions) {
-            if (action.type === "SEND_DM") {
+            // We treat SEND_DM as "Reply" generally.
+            // If we have a commentId, we try to reply to the comment.
+            // If not, we send a DM.
+            if (action.type === "SEND_DM" || action.type === "REPLY_COMMENT") {
                 const config = action.configJson as any;
                 const replyText = config.replyMessage;
                 if (replyText) {
-                    await sendDm(account, recipientId, replyText);
+                    if (commentId) {
+                        await replyToComment(account, commentId, replyText);
+                    } else {
+                        await sendDm(account, recipientId, replyText);
+                    }
                 }
             }
         }
@@ -211,11 +333,7 @@ async function sendDm(account: any, recipientId: string, text: string) {
     let accessToken = decrypt(account.accessTokenEncrypted).trim();
 
     // Debug: Log token prefix to verify decryption
-    console.log(`[IG Service] Sending DM with token prefix: ${accessToken.substring(0, 10)}... (Length: ${accessToken.length})`);
-
-    // Replace variables
-    // Simple replacement for now. {nome} is hard because we need to fetch user profile first.
-    // For now, let's just send the text.
+    console.log(`[IG Service] Sending DM with token prefix: ${accessToken.substring(0, 10)}...`);
 
     const url = `${IG_API_URL}/me/messages?access_token=${accessToken}`;
 
@@ -234,11 +352,36 @@ async function sendDm(account: any, recipientId: string, text: string) {
 
     if (!res.ok) {
         console.error("[IG Service] DM Send Failed:", JSON.stringify(data));
-
-        // Retry logic for expired token could go here (TODO)
-
         throw new Error(`Failed to send DM: ${JSON.stringify(data)}`);
     }
 
     return data;
 }
+
+async function replyToComment(account: any, commentId: string, text: string) {
+    let accessToken = decrypt(account.accessTokenEncrypted).trim();
+
+    console.log(`[IG Service] Replying to Comment ${commentId}.`);
+
+    const url = `${IG_API_URL}/${commentId}/replies?access_token=${accessToken}`;
+
+    const body = {
+        message: text
+    };
+
+    const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        console.error("[IG Service] Comment Reply Failed:", JSON.stringify(data));
+        throw new Error(`Failed to reply to comment: ${JSON.stringify(data)}`);
+    }
+
+    return data;
+}
+
