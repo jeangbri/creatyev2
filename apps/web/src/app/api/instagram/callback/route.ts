@@ -63,14 +63,15 @@ export async function GET(req: NextRequest) {
             throw new Error(tokenData.error_message || "Failed to exchange token");
         }
 
+        console.log('[IG Callback] Token exchanged successfully.');
+
         // Response: { access_token, user_id }
-        // Now we need to get the long-lived token?
-        // "Instagram Login" tokens are already long-lived (60 days)? Or need exchange?
-        // Documentation says for Instagram Login: they are short-lived (1 hour). Need to exchange for long-lived.
 
         // Exchange for long-lived
         const longLivedRes = await fetch(`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${tokenData.access_token}`);
         const longLivedData = await longLivedRes.json();
+
+        console.log('[IG Callback] Long-lived token fetched.');
 
         const finalAccessToken = longLivedData.access_token || tokenData.access_token;
         const expiresSeconds = longLivedData.expires_in || 3600;
@@ -81,16 +82,18 @@ export async function GET(req: NextRequest) {
         const meRes = await fetch(`https://graph.instagram.com/v21.0/me?fields=id,username,profile_picture_url&access_token=${finalAccessToken}`);
         const meData = await meRes.json();
 
+        console.log('[IG Callback] Me Data fetched:', meData);
+
         if (!meRes.ok) {
-            // If this fails, maybe scopes are wrong or user is not business
-            console.error('IG Me Error', meData);
-            // Continue but with warning? or fail?
+            console.error('[IG Callback] Me Error', meData);
         }
 
         const igUserId = meData.id || tokenData.user_id;
 
+        console.log(`[IG Callback] Saving account. Workspace: ${workspaceId}, IG User ID: ${igUserId}`);
+
         // Store in DB
-        await prisma.instagramAccount.upsert({
+        const result = await prisma.instagramAccount.upsert({
             where: {
                 workspaceId_igUserId: {
                     workspaceId,
@@ -116,10 +119,12 @@ export async function GET(req: NextRequest) {
             }
         });
 
+        console.log('[IG Callback] Account saved successfully:', result.id);
+
         return NextResponse.redirect(new URL('/settings/integracoes?success=true', req.url));
 
     } catch (err) {
-        console.error(err);
+        console.error('[IG Callback] CRITICAL ERROR:', err);
         return NextResponse.redirect(new URL('/settings/integracoes?error=server_error', req.url));
     }
 }
