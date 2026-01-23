@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { encrypt, decrypt } from "@/lib/encryption";
+import { processInstagramEvent } from "@/lib/instagram-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -120,5 +121,21 @@ export async function GET(req: NextRequest) {
     } catch (err) {
         console.error(err);
         return NextResponse.redirect(new URL('/settings/integracoes?error=server_error', req.url));
+    }
+}
+
+export async function POST(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const signature = req.headers.get("x-hub-signature-256");
+
+        // Process event (awaiting to ensure completion for MVP)
+        // In production, this should be offloaded to a queue.
+        await processInstagramEvent(body, signature);
+
+        return NextResponse.json({ ok: true });
+    } catch (e) {
+        console.error("Webhook POST Error", e);
+        return NextResponse.json({ ok: false }, { status: 500 });
     }
 }
