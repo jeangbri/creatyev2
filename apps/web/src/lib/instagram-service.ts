@@ -302,19 +302,23 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
                 // 1. Send DM (Private Reply if commentId exists)
                 // Always send if replyMessage is present (User expectation: "DM message")
                 const replyText = config.replyMessage;
+                const cta = (config.cta && config.cta.enabled && config.cta.text && config.cta.url)
+                    ? { text: config.cta.text, url: config.cta.url }
+                    : undefined;
+
                 if (replyText) {
                     if (commentId) {
                         try {
-                            await sendPrivateReply(account, commentId, replyText);
+                            await sendPrivateReply(account, commentId, replyText, cta);
                         } catch (e: any) {
                             // Fallback? If Private Reply fails, maybe try standard DM? 
                             // But usually strict 7 day window applies to Private Reply, and 24h to standard.
                             // If Private fails, standard likely fails too unless recently interacted.
                             console.error("Private Reply failed, attempting standard DM fallback", e);
-                            await sendDm(account, recipientId, replyText);
+                            await sendDm(account, recipientId, replyText, cta);
                         }
                     } else {
-                        await sendDm(account, recipientId, replyText);
+                        await sendDm(account, recipientId, replyText, cta);
                     }
                 }
 
@@ -342,17 +346,41 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
     }
 }
 
-async function sendDm(account: any, recipientId: string, text: string) {
+async function sendDm(account: any, recipientId: string, text: string, cta?: { text: string, url: string }) {
     let accessToken = decrypt(account.accessTokenEncrypted).trim();
 
-    console.log(`[IG Service] Sending DM to ${recipientId}...`);
+    console.log(`[IG Service] Sending DM to ${recipientId} (Has CTA: ${!!cta})...`);
 
     const url = `${IG_API_URL}/me/messages?access_token=${accessToken}`;
 
-    const body = {
-        recipient: { id: recipientId },
-        message: { text: text }
-    };
+    let body;
+
+    if (cta) {
+        body = {
+            recipient: { id: recipientId },
+            message: {
+                attachment: {
+                    type: "template",
+                    payload: {
+                        template_type: "button",
+                        text: text, // Button template text (max 640 chars)
+                        buttons: [
+                            {
+                                type: "web_url",
+                                url: cta.url,
+                                title: cta.text
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+    } else {
+        body = {
+            recipient: { id: recipientId },
+            message: { text: text }
+        };
+    }
 
     const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json();
@@ -364,23 +392,53 @@ async function sendDm(account: any, recipientId: string, text: string) {
     return data;
 }
 
-async function sendPrivateReply(account: any, commentId: string, text: string) {
+async function sendPrivateReply(account: any, commentId: string, text: string, cta?: { text: string, url: string }) {
     let accessToken = decrypt(account.accessTokenEncrypted).trim();
 
-    console.log(`[IG Service] Sending Private Reply to Comment ${commentId}...`);
+    console.log(`[IG Service] Sending Private Reply to Comment ${commentId} (Has CTA: ${!!cta})...`);
 
     const url = `${IG_API_URL}/me/messages?access_token=${accessToken}`;
 
-    const body = {
-        recipient: { comment_id: commentId },
-        message: { text: text }
-    };
+    let body;
+
+    if (cta) {
+        // Attempting Button Template for Private Reply
+        // Note: If this fails, we might need to fallback to text only.
+        // Instagram documentation is sparse on Private Reply attachment support.
+        // But generally, it mimics the messaging API.
+        body = {
+            recipient: { comment_id: commentId },
+            message: {
+                attachment: {
+                    type: "template",
+                    payload: {
+                        template_type: "button",
+                        text: text,
+                        buttons: [
+                            {
+                                type: "web_url",
+                                url: cta.url,
+                                title: cta.text
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+    } else {
+        body = {
+            recipient: { comment_id: commentId },
+            message: { text: text }
+        };
+    }
 
     const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json();
 
     if (!res.ok) {
         console.error("[IG Service] Private Reply Failed:", JSON.stringify(data));
+        // If the error implies attachment not supported, we could retry with text only?
+        // But for now, throw.
         throw new Error(`Failed to send Private Reply: ${JSON.stringify(data)}`);
     }
     return data;

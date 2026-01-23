@@ -190,6 +190,56 @@ export default function EditorPage() {
                                     </div>
                                 </div>
 
+                                {/* Button Configuration (CTA) */}
+                                <div className="space-y-4 pt-4 border-t border-border/50">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <label className="text-sm font-medium">Incluir Botão (Link)</label>
+                                            <p className="text-xs text-muted-foreground">Adiciona um botão abaixo da mensagem.</p>
+                                        </div>
+                                        <Switch
+                                            checked={!!action.configJson.cta?.enabled}
+                                            onCheckedChange={(checked) => {
+                                                const newActions = [...actions];
+                                                if (!newActions[idx].configJson.cta) {
+                                                    newActions[idx].configJson.cta = { enabled: false, text: '', url: '' };
+                                                }
+                                                newActions[idx].configJson.cta.enabled = checked;
+                                                setActions(newActions);
+                                            }}
+                                        />
+                                    </div>
+
+                                    {action.configJson.cta?.enabled && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Texto do Botão</label>
+                                                <Input
+                                                    placeholder="Ex: Clique Aqui"
+                                                    value={action.configJson.cta.text || ''}
+                                                    onChange={(e) => {
+                                                        const newActions = [...actions];
+                                                        newActions[idx].configJson.cta.text = e.target.value;
+                                                        setActions(newActions);
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Link de Destino</label>
+                                                <Input
+                                                    placeholder="https://..."
+                                                    value={action.configJson.cta.url || ''}
+                                                    onChange={(e) => {
+                                                        const newActions = [...actions];
+                                                        newActions[idx].configJson.cta.url = e.target.value;
+                                                        setActions(newActions);
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Only show Public Reply option if Feed Trigger is present in the workflow */}
                                 {triggers.some(t => t.type === 'FEED_COMMENT') && (
                                     <div className="pt-4 border-t space-y-4">
