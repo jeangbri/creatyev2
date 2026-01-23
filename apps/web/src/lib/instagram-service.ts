@@ -44,11 +44,55 @@ async function handleDmEvent(accountId: string, event: any) {
     });
 
     if (!account) {
-        console.error(`Account not found for recipientId: ${recipientId}`);
-        // DEBUG:
-        const all = await prisma.instagramAccount.findMany({ select: { igUserId: true, username: true } });
-        console.log("ALL AVAILABLE ACCOUNTS:", JSON.stringify(all));
-        return;
+        console.warn(`[IG Service] Account not found directly for recipientId: ${recipientId}. Attempting resolution via tokens...`);
+
+        // Self-Healing: Try to find which account this ID belongs to by checking tokens
+        const allAccounts = await prisma.instagramAccount.findMany({
+            where: { status: 'CONNECTED' }
+        });
+
+        let foundAccount = null;
+
+        for (const acc of allAccounts) {
+            try {
+                const token = decrypt(acc.accessTokenEncrypted);
+                // Try to fetch the recipientId node using this token
+                // We try both endpoints just in case, but usually graph.instagram.com for IG Login tokens
+                const checkUrl = `https://graph.instagram.com/v21.0/${recipientId}?fields=id,username&access_token=${token}`;
+
+                const res = await fetch(checkUrl);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.username === acc.username) {
+                        console.log(`[IG Service] ID Mismatch Resolved! stored=${acc.igUserId}, incoming=${recipientId}. Updating DB...`);
+
+                        // Update DB with the correct "Webhook-compatible" ID
+                        foundAccount = await prisma.instagramAccount.update({
+                            where: { id: acc.id },
+                            data: { igUserId: recipientId }
+                        });
+
+                        // Re-fetch with workspace
+                        foundAccount = await prisma.instagramAccount.findUnique({
+                            where: { id: acc.id },
+                            include: { workspace: true }
+                        });
+                        break;
+                    }
+                }
+            } catch (ignore) { }
+        }
+
+        if (!foundAccount) {
+            console.error(`[IG Service] Failed to resolve account for recipientId: ${recipientId}`);
+            // DEBUG:
+            console.log("ALL AVAILABLE ACCOUNTS (Failed resolution):", JSON.stringify(allAccounts.map(a => ({ id: a.id, igUserId: a.igUserId, username: a.username }))));
+            return;
+        }
+
+        // Use the resolved account
+        // @ts-ignore
+        account = foundAccount;
     }
 
     // 2. Log Webhook Event
