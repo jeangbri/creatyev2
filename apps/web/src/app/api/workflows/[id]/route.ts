@@ -46,10 +46,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         await prisma.workflow.update({
             where: { id: params.id },
             data: {
-                ...workflowUpdate,
+                status: workflowUpdate.status,
+                isActive: workflowUpdate.isActive,
+                flowDefinition: workflowUpdate.flowDefinition,
                 updatedAt: new Date(),
                 publishedAt: workflowUpdate.status === 'PUBLISHED' ? new Date() : undefined
-            } as any
+            }
         });
 
         // SYNC: If flowDefinition is provided, sync triggers and actions tables
@@ -57,28 +59,28 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
             const { nodes } = workflowUpdate.flowDefinition;
 
             // 1. Sync Triggers
-            const triggerNodes = nodes.filter((n: any) => n.type === 'trigger');
+            const triggerNodes = nodes.filter((n: any) => n.type === 'trigger' || n.type === 'trigger_comment' || n.type === 'trigger_mention');
             if (triggerNodes.length > 0) {
                 // Delete existing triggers and recreate based on graph
                 await prisma.workflowTrigger.deleteMany({ where: { workflowId: params.id } });
                 await prisma.workflowTrigger.createMany({
                     data: triggerNodes.map((n: any) => ({
                         workflowId: params.id,
-                        type: n.data.type || 'DM_RECEIVED',
+                        type: n.data.type || (n.type === 'trigger_comment' ? 'FEED_COMMENT' : n.type === 'trigger_mention' ? 'STORY_REPLY' : 'DM_RECEIVED'),
                         configJson: n.data.config || {}
                     }))
                 });
             }
 
-            // 2. Sync Actions (Simplified sync for the legacy runner/simple cases)
-            const actionNodes = nodes.filter((n: any) => n.type === 'instagram');
+            // 2. Sync Actions
+            const actionNodes = nodes.filter((n: any) => ['instagram', 'ai_response', 'webhook'].includes(n.type));
             if (actionNodes.length > 0) {
                 await prisma.workflowAction.deleteMany({ where: { workflowId: params.id } });
                 await prisma.workflowAction.createMany({
                     data: actionNodes.map((n: any) => ({
                         workflowId: params.id,
-                        type: n.data.content?.imageUrl ? 'SEND_CARD' : 'SEND_DM', // Map node logic to legacy types if needed
-                        configJson: n.data.content || {}
+                        type: n.type === 'instagram' ? (n.data.content?.imageUrl ? 'SEND_CARD' : 'SEND_DM') : n.type.toUpperCase(),
+                        configJson: n.type === 'instagram' ? (n.data.content || {}) : (n.data || {})
                     }))
                 });
             }
