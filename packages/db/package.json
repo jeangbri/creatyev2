@@ -3,10 +3,17 @@
     "version": "0.0.0",
     "main": "./src/index.ts",
     "types": "./src/index.ts",
-    "scripts": {},
-    "dependencies": {},
+    "scripts": {
+        "db:push": "prisma db push",
+        "generate": "prisma generate"
+    },
     "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0"
+        "@types/node": "^20.0.0",
+        "prisma": "^5.22.0",
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "@prisma/client": "^5.22.0",
+        "pg": "^8.17.2"
     }
 }

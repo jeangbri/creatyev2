@@ -162,3 +162,92 @@ export const StartNode = memo(({ data, selected }: NodeProps) => {
         </div>
     )
 })
+// Delay Node
+export const DelayNode = memo(({ data, selected }: NodeProps) => {
+    return (
+        <div className={cn(
+            "w-[280px] shadow-sm rounded-xl bg-white border transition-all",
+            selected ? "border-blue-500 ring-2 ring-blue-200" : "border-slate-200",
+            "hover:border-blue-300"
+        )}>
+            <Handle type="target" position={Position.Left} className="!bg-blue-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -ml-2" />
+
+            <div className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-amber-100 text-amber-600 rounded-lg">
+                    <div className="w-5 h-5 flex items-center justify-center font-bold text-xs">⏳</div>
+                </div>
+                <div>
+                    <h3 className="font-semibold text-slate-800">Aguardar</h3>
+                    <p className="text-xs text-slate-500">{(data as any).time || 'Definir tempo'}</p>
+                </div>
+            </div>
+
+            <Handle type="source" position={Position.Right} className="!bg-blue-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -mr-2" />
+        </div>
+    );
+});
+
+// Tag Node
+export const TagNode = memo(({ data, selected }: NodeProps) => {
+    return (
+        <div className={cn(
+            "w-[280px] shadow-sm rounded-xl bg-white border transition-all",
+            selected ? "border-blue-500 ring-2 ring-blue-200" : "border-slate-200",
+            "hover:border-blue-300"
+        )}>
+            <Handle type="target" position={Position.Left} className="!bg-blue-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -ml-2" />
+
+            <div className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                    <div className="w-5 h-5 flex items-center justify-center font-bold text-xs">🏷️</div>
+                </div>
+                <div className="flex-1">
+                    <h3 className="font-semibold text-slate-800">Tags</h3>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                        {((data as any).tags || ['TAG_DEMO']).map((tag: string, i: number) => (
+                            <Badge key={i} variant="secondary" className="text-[10px] px-1 h-5">{tag}</Badge>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <Handle type="source" position={Position.Right} className="!bg-blue-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -mr-2" />
+        </div>
+    );
+});
+
+// Condition Node
+export const ConditionNode = memo(({ data, selected }: NodeProps) => {
+    return (
+        <div className={cn(
+            "w-[280px] shadow-sm rounded-xl bg-white border transition-all",
+            selected ? "border-blue-500 ring-2 ring-blue-200" : "border-slate-200",
+            "hover:border-blue-300"
+        )}>
+            <Handle type="target" position={Position.Left} className="!bg-blue-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -ml-2" />
+
+            <div className="p-4 border-b">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-cyan-100 text-cyan-600 rounded-lg">
+                        <div className="w-5 h-5 flex items-center justify-center font-bold text-xs">❓</div>
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-slate-800">Condicional</h3>
+                        <p className="text-xs text-slate-500">Avaliação condicional</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-2 bg-slate-50 space-y-2 rounded-b-xl">
+                <div className="bg-green-100 text-green-700 text-xs font-bold px-3 py-2 rounded border border-green-200 flex justify-between items-center">
+                    <span>SIM</span>
+                    <Handle type="source" position={Position.Right} id="true" className="!bg-green-500 !w-3 !h-3 !border-2 !border-white !right-[-8px] !relative !transform-none" />
+                </div>
+                <div className="bg-red-100 text-red-700 text-xs font-bold px-3 py-2 rounded border border-red-200 flex justify-between items-center">
+                    <span>NÃO</span>
+                    <Handle type="source" position={Position.Right} id="false" className="!bg-red-500 !w-3 !h-3 !border-2 !border-white !right-[-8px] !relative !transform-none" />
+                </div>
+            </div>
+        </div>
+    );
+});

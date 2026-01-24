@@ -49,7 +49,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
                 ...workflowUpdate,
                 updatedAt: new Date(),
                 publishedAt: workflowUpdate.status === 'PUBLISHED' ? new Date() : undefined
-            }
+            } as any
         });
     }
 

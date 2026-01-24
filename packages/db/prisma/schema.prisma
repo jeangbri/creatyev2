@@ -18,6 +18,8 @@ model User {
 
   workspaces WorkspaceMember[]
   ownedWorkspaces Workspace[]
+
+  
 }
 
 model Workspace {
@@ -33,6 +35,8 @@ model Workspace {
   workflowFolders  WorkflowFolder[]
   workflows        Workflow[]
   responseTemplates ResponseTemplate[]
+
+  
 }
 
 model WorkspaceMember {
@@ -45,13 +49,14 @@ model WorkspaceMember {
   createdAt   DateTime  @default(now())
 
   @@unique([workspaceId, userId])
+  
 }
 
 model InstagramAccount {
   id                   String   @id @default(uuid())
   workspaceId          String
   workspace            Workspace @relation(fields: [workspaceId], references: [id])
-  igUserId             String   // unique per workspace logic handled in app code or complex constraint. But usually unique globally for a user? Let's assume unique globally for simplicity or just plain String.
+  igUserId             String
   username             String
   profilePicUrl        String?
   status               String   // CONNECTED, DISCONNECTED, TOKEN_EXPIRED
@@ -61,6 +66,7 @@ model InstagramAccount {
   updatedAt            DateTime @updatedAt
 
   @@unique([workspaceId, igUserId])
+  
 }
 
 model WorkflowFolder {
@@ -71,6 +77,8 @@ model WorkflowFolder {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   workflows   Workflow[]
+
+  
 }
 
 model Workflow {
@@ -82,6 +90,7 @@ model Workflow {
   title       String
   description String?
   channels    Json     // ["dm","story","feed"]
+  flowDefinition Json? // Stores the visual graph (nodes/edges) state
   isActive    Boolean  @default(false)
   status      String   // DRAFT, PUBLISHED
   createdAt   DateTime @default(now())
@@ -93,6 +102,8 @@ model Workflow {
   triggers        WorkflowTrigger[]
   actions         WorkflowAction[]
   automationRuns  AutomationRun[]
+
+  
 }
 
 model WorkflowTrigger {
@@ -101,6 +112,8 @@ model WorkflowTrigger {
   workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   type        String   // DM_RECEIVED, STORY_REPLY, FEED_COMMENT
   configJson  Json
+
+  
 }
 
 model WorkflowAction {
@@ -109,6 +122,8 @@ model WorkflowAction {
   workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   type        String   // SEND_DM, REPLY_COMMENT
   configJson  Json
+
+  
 }
 
 model ResponseTemplate {
@@ -119,6 +134,8 @@ model ResponseTemplate {
   body        String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  
 }
 
 model WebhookEvent {
@@ -134,6 +151,8 @@ model WebhookEvent {
   processingStatus String   // PENDING, PROCESSING, DONE, ERROR
   lastError       String?
   automationRuns  AutomationRun[]
+
+  
 }
 
 model AutomationRun {
@@ -148,6 +167,8 @@ model AutomationRun {
   correlationId   String?
   errorMessage    String?
   logs            AutomationRunLog[]
+
+  
 }
 
 model AutomationRunLog {
@@ -158,4 +179,6 @@ model AutomationRunLog {
   level     String   // INFO, WARN, ERROR
   message   String
   metaJson  Json?
+
+  
 }
