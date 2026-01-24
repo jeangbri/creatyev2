@@ -24,7 +24,7 @@ import {
     useReactFlow
 } from '@xyflow/react';
 
-import { InstagramNode, StartNode, DelayNode, TagNode, ConditionNode } from "@/components/flow/custom-nodes";
+import { InstagramNode, StartNode, TriggerNode, DelayNode, TagNode, ConditionNode, AINode, WebhookNode } from "@/components/flow/custom-nodes";
 import { Sidebar } from "@/components/flow/sidebar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Input } from "@/components/ui/input"
@@ -38,9 +38,14 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 const nodeTypes = {
     instagram: InstagramNode,
     start: StartNode,
+    trigger: TriggerNode,
+    trigger_comment: TriggerNode,
+    trigger_mention: TriggerNode,
     delay: DelayNode,
     tag: TagNode,
-    condition: ConditionNode
+    condition: ConditionNode,
+    ai_response: AINode,
+    webhook: WebhookNode
 };
 
 export default function EditorPage() {
@@ -168,6 +173,16 @@ function FlowEditor() {
                 newNode.data = { time: '1 hora' }
             } else if (type === 'tag') {
                 newNode.data = { tags: ['NOVAS_TAGS'] }
+            } else if (type === 'trigger') {
+                newNode.data = { type: 'DM_RECEIVED', config: { keyword: '', matchType: 'exact' } }
+            } else if (type === 'trigger_comment') {
+                newNode.data = { type: 'FEED_COMMENT', config: { keyword: '', matchType: 'contains' } }
+            } else if (type === 'trigger_mention') {
+                newNode.data = { type: 'trigger_mention', config: { keyword: '', matchType: 'contains' } }
+            } else if (type === 'ai_response') {
+                newNode.data = { prompt: 'Você é um assistente prestativo. Responda a dúvida do cliente baseada no contexto...', model: 'gpt-4o-mini' }
+            } else if (type === 'webhook') {
+                newNode.data = { url: '', method: 'POST', headers: {} }
             }
 
             setNodes((nds) => nds.concat(newNode));
@@ -219,6 +234,7 @@ function FlowEditor() {
                 body: JSON.stringify({
                     workflow: {
                         status: publish ? 'PUBLISHED' : workflow.status,
+                        isActive: publish ? true : workflow.isActive,
                         flowDefinition
                     }
                 })
@@ -303,9 +319,12 @@ function FlowEditor() {
                         <div className="flex items-center justify-between">
                             <SheetTitle>
                                 {selectedNode?.type === 'instagram' ? 'Editar Mensagem' :
-                                    selectedNode?.type === 'delay' ? 'Editar Aguardar' :
-                                        selectedNode?.type === 'tag' ? 'Editar Tags' :
-                                            selectedNode?.type === 'condition' ? 'Editar Condição' : 'Propriedades'}
+                                    selectedNode?.type?.startsWith('trigger') ? 'Configurar Gatilho' :
+                                        selectedNode?.type === 'ai_response' ? 'Configurar Inteligência Artificial' :
+                                            selectedNode?.type === 'webhook' ? 'Configurar Webhook/API' :
+                                                selectedNode?.type === 'delay' ? 'Editar Aguardar' :
+                                                    selectedNode?.type === 'tag' ? 'Editar Tags' :
+                                                        selectedNode?.type === 'condition' ? 'Editar Condição' : 'Propriedades'}
                             </SheetTitle>
                             <Button variant="ghost" size="icon" onClick={deleteNode} className="text-red-500 hover:bg-red-50 hover:text-red-600">
                                 <Trash2 className="w-4 h-4" />
@@ -317,241 +336,326 @@ function FlowEditor() {
                     </SheetHeader>
 
                     {selectedNode && (
-                        <div className="space-y-6">
-                            {/* INSTAGRAM (MESSAGE) CONFIG */}
-                            {selectedNode.type === 'instagram' && (
-                                <>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <label className="text-sm font-medium text-slate-700">Mensagem</label>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                                                        <Braces className="w-3 h-3" /> Variáveis
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-[200px] p-0" align="end">
-                                                    <Command>
-                                                        <CommandInput placeholder="Buscar variável..." />
-                                                        <CommandList>
-                                                            <CommandEmpty>Nenhuma variável.</CommandEmpty>
-                                                            <CommandGroup heading="Contato">
-                                                                {['nome', 'username'].map(v => (
-                                                                    <CommandItem key={v} onSelect={() => {
-                                                                        const currentMsg = (selectedNode.data as any).content?.message || '';
-                                                                        updateNodeData(selectedNode.id, {
-                                                                            content: { ...(selectedNode.data as any).content, message: currentMsg + ` {${v}}` }
-                                                                        });
-                                                                    }}>
-                                                                        {v.charAt(0).toUpperCase() + v.slice(1)}
-                                                                    </CommandItem>
-                                                                ))}
-                                                            </CommandGroup>
-                                                        </CommandList>
-                                                    </Command>
-                                                </PopoverContent>
-                                            </Popover>
-                                        </div>
-                                        <Textarea
-                                            className="min-h-[120px] bg-slate-50 border-slate-200"
-                                            placeholder="Digite sua mensagem..."
-                                            value={(selectedNode.data as any).content?.message || ''}
-                                            onChange={(e) => updateNodeData(selectedNode.id, {
-                                                content: { ...(selectedNode.data as any).content, message: e.target.value }
-                                            })}
-                                        />
-                                    </div>
-
-                                    {/* Image Config */}
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-medium text-slate-700">Imagem</label>
-                                        <Tabs defaultValue={(selectedNode.data as any).content?.imageUrl?.includes('supabase') ? 'upload' : 'url'}>
-                                            <TabsList className="grid w-full grid-cols-2 bg-slate-100">
-                                                <TabsTrigger value="url">URL Externa</TabsTrigger>
-                                                <TabsTrigger value="upload">Upload</TabsTrigger>
-                                            </TabsList>
-                                            <TabsContent value="url">
-                                                <Input
-                                                    className="bg-slate-50"
-                                                    placeholder="https://..."
-                                                    value={(selectedNode.data as any).content?.imageUrl || ''}
-                                                    onChange={(e) => updateNodeData(selectedNode.id, {
-                                                        content: { ...(selectedNode.data as any).content, imageUrl: e.target.value }
-                                                    })}
-                                                />
-                                            </TabsContent>
-                                            <TabsContent value="upload">
-                                                <div className="flex flex-col gap-3">
-                                                    <Input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        className="cursor-pointer bg-slate-50"
-                                                        onChange={async (e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (!file) return;
-                                                            const formData = new FormData();
-                                                            formData.append("file", file);
-                                                            toast.promise(
-                                                                fetch('/api/upload', { method: 'POST', body: formData }).then(res => res.json()),
-                                                                {
-                                                                    loading: 'Enviando...',
-                                                                    success: (data) => {
-                                                                        updateNodeData(selectedNode.id, {
-                                                                            content: { ...(selectedNode.data as any).content, imageUrl: data.url }
-                                                                        });
-                                                                        return 'Enviado!';
-                                                                    },
-                                                                    error: 'Erro no upload'
-                                                                }
-                                                            );
-                                                        }}
-                                                    />
-                                                    {(selectedNode.data as any).content?.imageUrl && (
-                                                        <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-slate-100">
-                                                            <img src={(selectedNode.data as any).content?.imageUrl} className="h-full w-full object-contain" />
-                                                            <Button
-                                                                variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6"
-                                                                onClick={() => updateNodeData(selectedNode.id, {
-                                                                    content: { ...(selectedNode.data as any).content, imageUrl: '' }
-                                                                })}
-                                                            >
-                                                                <X className="w-3 h-3" />
-                                                            </Button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </TabsContent>
-                                        </Tabs>
-                                    </div>
-
-                                    {/* Buttons Config */}
-                                    <div className="pt-6 border-t border-slate-100 space-y-4">
-                                        <label className="text-sm font-medium text-slate-700">Botões</label>
-                                        {((selectedNode.data as any).content?.buttons || []).map((btn: any, index: number) => (
-                                            <div key={index} className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 relative group">
-                                                <Button
-                                                    variant="ghost" size="icon"
-                                                    className="absolute top-2 right-2 h-6 w-6 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100"
-                                                    onClick={() => {
-                                                        const b = [...((selectedNode.data as any).content?.buttons || [])];
-                                                        b.splice(index, 1);
-                                                        updateNodeData(selectedNode.id, { content: { ...(selectedNode.data as any).content, buttons: b } });
-                                                    }}
-                                                >
-                                                    <Trash2 className="w-3 h-3" />
-                                                </Button>
-                                                <Input
-                                                    placeholder="Nome do botão"
-                                                    value={btn.label || ''}
-                                                    onChange={(e) => {
-                                                        const b = [...((selectedNode.data as any).content?.buttons || [])];
-                                                        b[index] = { ...b[index], label: e.target.value };
-                                                        updateNodeData(selectedNode.id, { content: { ...(selectedNode.data as any).content, buttons: b } });
-                                                    }}
-                                                />
-                                                <Input
-                                                    className="text-xs h-8"
-                                                    placeholder="https://..."
-                                                    value={btn.url || ''}
-                                                    onChange={(e) => {
-                                                        const b = [...((selectedNode.data as any).content?.buttons || [])];
-                                                        b[index] = { ...b[index], url: e.target.value };
-                                                        updateNodeData(selectedNode.id, { content: { ...(selectedNode.data as any).content, buttons: b } });
-                                                    }}
-                                                />
-                                            </div>
-                                        ))}
-                                        {((selectedNode.data as any).content?.buttons?.length || 0) < 3 && (
-                                            <Button
-                                                variant="outline"
-                                                className="w-full border-dashed"
-                                                onClick={() => {
-                                                    const b = [...((selectedNode.data as any).content?.buttons || [])];
-                                                    b.push({ label: '', url: '', type: 'web_url' });
-                                                    updateNodeData(selectedNode.id, { content: { ...(selectedNode.data as any).content, buttons: b } });
-                                                }}
-                                            >
-                                                <Plus className="w-4 h-4 mr-2" /> Adicionar botão
-                                            </Button>
-                                        )}
-                                    </div>
                                 </>
                             )}
 
-                            {/* DELAY CONFIG */}
-                            {selectedNode.type === 'delay' && (
-                                <div className="space-y-4">
-                                    <label className="text-sm font-medium text-slate-700">Tempo de espera</label>
-                                    <div className="grid grid-cols-2 gap-2">
+                {/* AI RESPONSE CONFIG */}
+                {selectedNode.type === 'ai_response' && (
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-700">Instrução da IA (Prompt)</label>
+                            <Textarea
+                                placeholder="Ex: Você é um vendedor da loja Creatye..."
+                                className="min-h-[150px] bg-slate-50"
+                                value={(selectedNode.data as any).prompt || ''}
+                                onChange={(e) => updateNodeData(selectedNode.id, { prompt: e.target.value })}
+                            />
+                            <p className="text-[10px] text-slate-400">
+                                A IA usará o histórico da conversa para gerar uma resposta baseada nesta instrução.
+                            </p>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-700">Modelo</label>
+                            <select
+                                className="w-full p-2 bg-slate-50 border rounded-md text-sm"
+                                value={(selectedNode.data as any).model || 'gpt-4o-mini'}
+                                onChange={(e) => updateNodeData(selectedNode.id, { model: e.target.value })}
+                            >
+                                <option value="gpt-4o-mini">GPT-4o Mini (Rápido/Barato)</option>
+                                <option value="gpt-4o">GPT-4o (Poderoso)</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+
+                {/* WEBHOOK CONFIG */}
+                {selectedNode.type === 'webhook' && (
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-700">URL do Endpoint</label>
+                            <Input
+                                placeholder="https://sua-api.com/webhooks"
+                                value={(selectedNode.data as any).url || ''}
+                                onChange={(e) => updateNodeData(selectedNode.id, { url: e.target.value })}
+                                className="bg-slate-50"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-700">Método</label>
+                            <Tabs
+                                defaultValue={(selectedNode.data as any).method || 'POST'}
+                                onValueChange={(val) => updateNodeData(selectedNode.id, { method: val })}
+                            >
+                                <TabsList className="grid w-full grid-cols-2 bg-slate-100">
+                                    <TabsTrigger value="POST">POST</TabsTrigger>
+                                    <TabsTrigger value="GET">GET</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
+                        <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                            <p className="text-[10px] text-amber-700 leading-relaxed">
+                                <strong>Nota:</strong> Enviaremos o ID do usuário e o conteúdo da última interação no corpo da requisição (JSON).
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* INSTAGRAM (MESSAGE) CONFIG */}
+                {(selectedNode.type === 'instagram' || selectedNode.type === 'trigger' || selectedNode.type === 'trigger_comment' || selectedNode.type === 'trigger_mention') && selectedNode.type !== 'ai_response' && selectedNode.type !== 'webhook' && (
+                    <>
+                        {/* Exibir o config de gatilho apenas se for tipo trigger */}
+                        {selectedNode.type.startsWith('trigger') && (
+                            <div className="space-y-4 mb-6 pb-6 border-b border-dashed">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-700">Configuração de Gatilho</label>
+                                    <div className="space-y-2">
+                                        <label className="text-xs text-slate-500">Palavra-Chave</label>
                                         <Input
-                                            type="number"
-                                            value={parseInt((selectedNode.data as any).time) || 1}
-                                            onChange={(e) => {
-                                                const unit = (selectedNode.data as any).time?.split(' ')?.[1] || 'hora(s)';
-                                                updateNodeData(selectedNode.id, { time: `${e.target.value} ${unit}` });
+                                            placeholder="Ex: QUERO"
+                                            value={(selectedNode.data as any).config?.keyword || ''}
+                                            onChange={(e) => updateNodeData(selectedNode.id, {
+                                                config: { ...(selectedNode.data as any).config, keyword: e.target.value }
+                                            })}
+                                            className="bg-slate-50 font-mono uppercase"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {selectedNode.type === 'instagram' && (
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium text-slate-700">Mensagem</label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                                <Braces className="w-3 h-3" /> Variáveis
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[200px] p-0" align="end">
+                                            <Command>
+                                                <CommandInput placeholder="Buscar variável..." />
+                                                <CommandList>
+                                                    <CommandEmpty>Nenhuma variável.</CommandEmpty>
+                                                    <CommandGroup heading="Contato">
+                                                        {['nome', 'username'].map(v => (
+                                                            <CommandItem key={v} onSelect={() => {
+                                                                const currentMsg = (selectedNode.data as any).content?.message || '';
+                                                                updateNodeData(selectedNode.id, {
+                                                                    content: { ...(selectedNode.data as any).content, message: currentMsg + ` {${v}}` }
+                                                                });
+                                                            }}>
+                                                                {v.charAt(0).toUpperCase() + v.slice(1)}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                                <Textarea
+                                    className="min-h-[120px] bg-slate-50 border-slate-200"
+                                    placeholder="Digite sua mensagem..."
+                                    value={(selectedNode.data as any).content?.message || ''}
+                                    onChange={(e) => updateNodeData(selectedNode.id, {
+                                        content: { ...(selectedNode.data as any).content, message: e.target.value }
+                                    })}
+                                />
+                            </div>
+
+                                    {/* Image Config */}
+                        <div className="space-y-3">
+                            <label className="text-sm font-medium text-slate-700">Imagem</label>
+                            <Tabs defaultValue={(selectedNode.data as any).content?.imageUrl?.includes('supabase') ? 'upload' : 'url'}>
+                                <TabsList className="grid w-full grid-cols-2 bg-slate-100">
+                                    <TabsTrigger value="url">URL Externa</TabsTrigger>
+                                    <TabsTrigger value="upload">Upload</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="url">
+                                    <Input
+                                        className="bg-slate-50"
+                                        placeholder="https://..."
+                                        value={(selectedNode.data as any).content?.imageUrl || ''}
+                                        onChange={(e) => updateNodeData(selectedNode.id, {
+                                            content: { ...(selectedNode.data as any).content, imageUrl: e.target.value }
+                                        })}
+                                    />
+                                </TabsContent>
+                                <TabsContent value="upload">
+                                    <div className="flex flex-col gap-3">
+                                        <Input
+                                            type="file"
+                                            accept="image/*"
+                                            className="cursor-pointer bg-slate-50"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                const formData = new FormData();
+                                                formData.append("file", file);
+                                                toast.promise(
+                                                    fetch('/api/upload', { method: 'POST', body: formData }).then(res => res.json()),
+                                                    {
+                                                        loading: 'Enviando...',
+                                                        success: (data) => {
+                                                            updateNodeData(selectedNode.id, {
+                                                                content: { ...(selectedNode.data as any).content, imageUrl: data.url }
+                                                            });
+                                                            return 'Enviado!';
+                                                        },
+                                                        error: 'Erro no upload'
+                                                    }
+                                                );
                                             }}
                                         />
-                                        <select
-                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                            value={(selectedNode.data as any).time?.split(' ')?.[1] || 'hora(s)'}
-                                            onChange={(e) => {
-                                                const val = parseInt((selectedNode.data as any).time) || 1;
-                                                updateNodeData(selectedNode.id, { time: `${val} ${e.target.value}` });
-                                            }}
-                                        >
-                                            <option value="minuto(s)">Minuto(s)</option>
-                                            <option value="hora(s)">Hora(s)</option>
-                                            <option value="dia(s)">Dia(s)</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* TAG CONFIG */}
-                            {selectedNode.type === 'tag' && (
-                                <div className="space-y-4">
-                                    <label className="text-sm font-medium text-slate-700">Gerenciar Etiquetas</label>
-                                    <div className="space-y-2">
-                                        {((selectedNode.data as any).tags || []).map((tag: string, i: number) => (
-                                            <div key={i} className="flex gap-2">
-                                                <Input
-                                                    value={tag}
-                                                    onChange={(e) => {
-                                                        const t = [...((selectedNode.data as any).tags || [])];
-                                                        t[i] = e.target.value;
-                                                        updateNodeData(selectedNode.id, { tags: t });
-                                                    }}
-                                                />
+                                        {(selectedNode.data as any).content?.imageUrl && (
+                                            <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-slate-100">
+                                                <img src={(selectedNode.data as any).content?.imageUrl} className="h-full w-full object-contain" />
                                                 <Button
-                                                    variant="ghost" size="icon"
-                                                    onClick={() => {
-                                                        const t = [...((selectedNode.data as any).tags || [])];
-                                                        t.splice(i, 1);
-                                                        updateNodeData(selectedNode.id, { tags: t });
-                                                    }}
+                                                    variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6"
+                                                    onClick={() => updateNodeData(selectedNode.id, {
+                                                        content: { ...(selectedNode.data as any).content, imageUrl: '' }
+                                                    })}
                                                 >
-                                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                                    <X className="w-3 h-3" />
                                                 </Button>
                                             </div>
-                                        ))}
-                                        <Button
-                                            variant="outline"
-                                            className="w-full"
-                                            onClick={() => {
-                                                const t = [...((selectedNode.data as any).tags || [])];
-                                                t.push('NOVA_TAG');
-                                                updateNodeData(selectedNode.id, { tags: t });
-                                            }}
-                                        >
-                                            <Plus className="w-4 h-4 mr-2" /> Adicionar Tag
-                                        </Button>
+                                        )}
                                     </div>
+                                </TabsContent>
+                            </Tabs>
+                        </div>
+
+                        {/* Buttons Config */}
+                        <div className="pt-6 border-t border-slate-100 space-y-4">
+                            <label className="text-sm font-medium text-slate-700">Botões</label>
+                            {((selectedNode.data as any).content?.buttons || []).map((btn: any, index: number) => (
+                                <div key={index} className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 relative group">
+                                    <Button
+                                        variant="ghost" size="icon"
+                                        className="absolute top-2 right-2 h-6 w-6 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100"
+                                        onClick={() => {
+                                            const b = [...((selectedNode.data as any).content?.buttons || [])];
+                                            b.splice(index, 1);
+                                            updateNodeData(selectedNode.id, { content: { ...(selectedNode.data as any).content, buttons: b } });
+                                        }}
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                    <Input
+                                        placeholder="Nome do botão"
+                                        value={btn.label || ''}
+                                        onChange={(e) => {
+                                            const b = [...((selectedNode.data as any).content?.buttons || [])];
+                                            b[index] = { ...b[index], label: e.target.value };
+                                            updateNodeData(selectedNode.id, { content: { ...(selectedNode.data as any).content, buttons: b } });
+                                        }}
+                                    />
+                                    <Input
+                                        className="text-xs h-8"
+                                        placeholder="https://..."
+                                        value={btn.url || ''}
+                                        onChange={(e) => {
+                                            const b = [...((selectedNode.data as any).content?.buttons || [])];
+                                            b[index] = { ...b[index], url: e.target.value };
+                                            updateNodeData(selectedNode.id, { content: { ...(selectedNode.data as any).content, buttons: b } });
+                                        }}
+                                    />
                                 </div>
+                            ))}
+                            {((selectedNode.data as any).content?.buttons?.length || 0) < 3 && (
+                                <Button
+                                    variant="outline"
+                                    className="w-full border-dashed"
+                                    onClick={() => {
+                                        const b = [...((selectedNode.data as any).content?.buttons || [])];
+                                        b.push({ label: '', url: '', type: 'web_url' });
+                                        updateNodeData(selectedNode.id, { content: { ...(selectedNode.data as any).content, buttons: b } });
+                                    }}
+                                >
+                                    <Plus className="w-4 h-4 mr-2" /> Adicionar botão
+                                </Button>
                             )}
                         </div>
-                    )}
-                </SheetContent>
-            </Sheet>
+                    </>
+                )}
+
+                {/* DELAY CONFIG */}
+                {selectedNode.type === 'delay' && (
+                    <div className="space-y-4">
+                        <label className="text-sm font-medium text-slate-700">Tempo de espera</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <Input
+                                type="number"
+                                value={parseInt((selectedNode.data as any).time) || 1}
+                                onChange={(e) => {
+                                    const unit = (selectedNode.data as any).time?.split(' ')?.[1] || 'hora(s)';
+                                    updateNodeData(selectedNode.id, { time: `${e.target.value} ${unit}` });
+                                }}
+                            />
+                            <select
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                value={(selectedNode.data as any).time?.split(' ')?.[1] || 'hora(s)'}
+                                onChange={(e) => {
+                                    const val = parseInt((selectedNode.data as any).time) || 1;
+                                    updateNodeData(selectedNode.id, { time: `${val} ${e.target.value}` });
+                                }}
+                            >
+                                <option value="minuto(s)">Minuto(s)</option>
+                                <option value="hora(s)">Hora(s)</option>
+                                <option value="dia(s)">Dia(s)</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+
+                {/* TAG CONFIG */}
+                {selectedNode.type === 'tag' && (
+                    <div className="space-y-4">
+                        <label className="text-sm font-medium text-slate-700">Gerenciar Etiquetas</label>
+                        <div className="space-y-2">
+                            {((selectedNode.data as any).tags || []).map((tag: string, i: number) => (
+                                <div key={i} className="flex gap-2">
+                                    <Input
+                                        value={tag}
+                                        onChange={(e) => {
+                                            const t = [...((selectedNode.data as any).tags || [])];
+                                            t[i] = e.target.value;
+                                            updateNodeData(selectedNode.id, { tags: t });
+                                        }}
+                                    />
+                                    <Button
+                                        variant="ghost" size="icon"
+                                        onClick={() => {
+                                            const t = [...((selectedNode.data as any).tags || [])];
+                                            t.splice(i, 1);
+                                            updateNodeData(selectedNode.id, { tags: t });
+                                        }}
+                                    >
+                                        <Trash2 className="w-4 h-4 text-red-500" />
+                                    </Button>
+                                </div>
+                            ))}
+                            <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => {
+                                    const t = [...((selectedNode.data as any).tags || [])];
+                                    t.push('NOVA_TAG');
+                                    updateNodeData(selectedNode.id, { tags: t });
+                                }}
+                            >
+                                <Plus className="w-4 h-4 mr-2" /> Adicionar Tag
+                            </Button>
+                        </div>
+                    </div>
+                )}
         </div>
+    )
+}
+                </SheetContent >
+            </Sheet >
+        </div >
     );
 }

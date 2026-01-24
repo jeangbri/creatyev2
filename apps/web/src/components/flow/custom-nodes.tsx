@@ -5,7 +5,7 @@ import { Handle, Position, NodeProps } from '@xyflow/react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Instagram, Image as ImageIcon, CheckCircle2, Play } from 'lucide-react';
+import { MessageSquare, Instagram, Image as ImageIcon, CheckCircle2, Play, Sparkles, Globe, AtSign, MessageCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 // Custom Instagram Card Node
@@ -127,7 +127,71 @@ export const InstagramNode = memo(({ data, selected }: NodeProps) => {
     );
 });
 
-// Start Node
+// Trigger Node (Keyword based)
+export const TriggerNode = memo(({ data, selected }: NodeProps) => {
+    const {
+        type = 'DM_RECEIVED',
+        config = { keyword: '', matchType: 'exact' }
+    } = data as any;
+
+    const icon = type === 'DM_RECEIVED' ? <Play size={18} fill="currentColor" /> :
+        type === 'STORY_REPLY' ? <Instagram size={18} /> :
+            type === 'STORY_MENTION' || type === 'trigger_mention' ? <AtSign size={18} /> :
+                type === 'FEED_COMMENT' || type === 'trigger_comment' ? <MessageCircle size={18} /> : <Play size={18} fill="currentColor" />;
+
+    const typeLabel = type === 'DM_RECEIVED' ? 'Mensagem Direta' :
+        type === 'STORY_REPLY' ? 'Resposta de Story' :
+            type === 'trigger_mention' ? 'Menção no Story' :
+                type === 'trigger_comment' ? 'Comentário em Post' : 'Gatilho';
+
+    return (
+        <div className={cn(
+            "w-[300px] shadow-lg rounded-xl bg-white border-2 transition-all overflow-hidden",
+            selected ? "border-emerald-500 ring-2 ring-emerald-100" : "border-emerald-100",
+            "hover:border-emerald-300"
+        )}>
+            {/* Header */}
+            <div className="p-4 bg-emerald-50 border-b border-emerald-100 flex items-center gap-3">
+                <div className="p-2 bg-emerald-500 text-white rounded-lg shadow-sm">
+                    {icon}
+                </div>
+                <div>
+                    <h3 className="font-bold text-emerald-900 text-sm">{typeLabel}</h3>
+                    <p className="text-[10px] text-emerald-600 font-medium uppercase tracking-wider italic">Gatilho de Entrada</p>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-4 space-y-3">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Se o usuário enviar:</p>
+                    <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-white border-emerald-200 text-emerald-700 font-mono">
+                            {config.keyword || 'Qualquer palavra'}
+                        </Badge>
+                        <span className="text-[10px] text-slate-400">
+                            ({config.matchType === 'exact' ? 'Exato' : 'Contém'})
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex justify-end items-center gap-2 pt-2">
+                    <span className="text-xs font-medium text-slate-400">Iniciar fluxo</span>
+                    <div className="bg-emerald-500 w-3 h-3 rounded-full shadow-sm"></div>
+                </div>
+            </div>
+
+            {/* Output Handle */}
+            <Handle
+                type="source"
+                position={Position.Right}
+                className="!bg-emerald-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -mr-3"
+            />
+        </div>
+    );
+});
+
+// Start Node (Old entry, now just a helper or deprecated in favor of Trigger)
 export const StartNode = memo(({ data, selected }: NodeProps) => {
     return (
         <div className={cn(
@@ -141,17 +205,13 @@ export const StartNode = memo(({ data, selected }: NodeProps) => {
                 </div>
                 <div>
                     <h3 className="font-bold text-slate-800">Início</h3>
-                    <p className="text-xs text-slate-500">Conecte os nós para iniciar</p>
+                    <p className="text-xs text-slate-500">Fluxo Visual</p>
                 </div>
             </div>
 
             <p className="text-xs text-slate-400 mb-6 leading-relaxed">
-                Arraste o ponto azul para adicionar novos blocos e construir seu fluxo.
+                Connecte um <span className="text-emerald-600 font-bold">Gatilho</span> ou inicie a lógica aqui.
             </p>
-
-            <div className="flex justify-end items-center gap-2">
-                <span className="text-xs font-medium text-slate-400">Próximo passo</span>
-            </div>
 
             {/* Output Handle */}
             <Handle
@@ -212,6 +272,82 @@ export const TagNode = memo(({ data, selected }: NodeProps) => {
             </div>
 
             <Handle type="source" position={Position.Right} className="!bg-blue-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -mr-2" />
+        </div>
+    );
+});
+
+// AI Response Node
+export const AINode = memo(({ data, selected }: NodeProps) => {
+    return (
+        <div className={cn(
+            "w-[300px] shadow-lg rounded-xl bg-white border-2 transition-all overflow-hidden",
+            selected ? "border-purple-500 ring-2 ring-purple-100" : "border-purple-100",
+            "hover:border-purple-300"
+        )}>
+            <Handle type="target" position={Position.Left} className="!bg-purple-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -ml-2" />
+
+            <div className="p-4 bg-purple-50 border-b border-purple-100 flex items-center gap-3">
+                <div className="p-2 bg-purple-500 text-white rounded-lg shadow-sm">
+                    <Sparkles size={18} />
+                </div>
+                <div>
+                    <h3 className="font-bold text-purple-900 text-sm">Resposta IA</h3>
+                    <p className="text-[10px] text-purple-600 font-medium uppercase">Inteligência Artificial</p>
+                </div>
+            </div>
+
+            <div className="p-4 space-y-3">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Prompt / Instrução:</p>
+                    <p className="text-xs text-slate-700 italic truncate italic">
+                        "{(data as any).prompt || 'Responda educadamente...'}"
+                    </p>
+                </div>
+
+                <div className="flex justify-end items-center gap-2 pt-2">
+                    <span className="text-xs font-medium text-slate-400">Próximo passo</span>
+                    <div className="bg-purple-500 w-3 h-3 rounded-full shadow-sm"></div>
+                </div>
+            </div>
+
+            <Handle type="source" position={Position.Right} className="!bg-purple-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -mr-2" />
+        </div>
+    );
+});
+
+// Webhook Node
+export const WebhookNode = memo(({ data, selected }: NodeProps) => {
+    return (
+        <div className={cn(
+            "w-[300px] shadow-lg rounded-xl bg-white border-2 transition-all overflow-hidden",
+            selected ? "border-slate-500 ring-2 ring-slate-100" : "border-slate-200",
+            "hover:border-slate-300"
+        )}>
+            <Handle type="target" position={Position.Left} className="!bg-slate-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -ml-2" />
+
+            <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
+                <div className="p-2 bg-slate-700 text-white rounded-lg shadow-sm">
+                    <Globe size={18} />
+                </div>
+                <div>
+                    <h3 className="font-bold text-slate-800 text-sm">Webhook API</h3>
+                    <p className="text-[10px] text-slate-500 font-medium uppercase">Integração Externa</p>
+                </div>
+            </div>
+
+            <div className="p-4 space-y-2">
+                <div className="flex items-center gap-2 bg-slate-100 px-2 py-1 rounded text-[10px] font-mono text-slate-600 truncate">
+                    <Badge variant="outline" className="h-4 px-1 text-[8px] bg-white">POST</Badge>
+                    {(data as any).url || 'https://sua-api.com/endpoint'}
+                </div>
+
+                <div className="flex justify-end items-center gap-2 pt-2">
+                    <span className="text-xs font-medium text-slate-400">Próximo passo</span>
+                    <div className="bg-slate-500 w-3 h-3 rounded-full shadow-sm"></div>
+                </div>
+            </div>
+
+            <Handle type="source" position={Position.Right} className="!bg-slate-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -mr-2" />
         </div>
     );
 });
