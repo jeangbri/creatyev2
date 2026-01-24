@@ -150,6 +150,13 @@ export const TriggerNode = memo(({ data, selected }: NodeProps) => {
             selected ? "border-emerald-500 ring-2 ring-emerald-100" : "border-emerald-100",
             "hover:border-emerald-300"
         )}>
+            {/* Input Handle (Allow connection from Start or others) */}
+            <Handle
+                type="target"
+                position={Position.Left}
+                className="!bg-emerald-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -ml-3"
+            />
+
             {/* Header */}
             <div className="p-4 bg-emerald-50 border-b border-emerald-100 flex items-center gap-3">
                 <div className="p-2 bg-emerald-500 text-white rounded-lg shadow-sm">
