@@ -215,7 +215,12 @@ async function handleDmEvent(accountId: string, event: any) {
         account = foundAccount;
     }
 
-    if (!account) return;
+    if (!account) {
+        console.error(`[IG Service] STOP: No account found for DM. Recipient: ${recipientId}`);
+        return;
+    }
+
+    console.log(`[IG Service] Account identified: ${account.username}`);
 
     // 2. Log Webhook Event
     const webhookEvent = await prisma.webhookEvent.create({
@@ -248,14 +253,21 @@ async function handleDmEvent(accountId: string, event: any) {
         }
     });
 
+    console.log(`[IG Service] Found ${workflows.length} active workflows for ${targetTriggerType}`);
+
     // 4. Match Triggers
     for (const workflow of workflows) {
         const trigger = workflow.triggers.find(t => t.type === targetTriggerType);
-        if (!trigger) continue;
+        if (!trigger) {
+            console.log(`[IG Service] Trigger of type ${targetTriggerType} not found in workflow ${workflow.title}`);
+            continue;
+        }
 
         const config = trigger.configJson as any;
         const keywords = config.keywords; // string[]
         const matchMode = config.matchMode || "contains";
+
+        console.log(`[IG Service] Checking workflow "${workflow.title}". Keywords: ${JSON.stringify(keywords)}, Mode: ${matchMode}`);
 
         let matched = false;
 
@@ -295,9 +307,12 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
     });
 
     try {
+        console.log(`[IG Service] Executing actions for workflow: ${workflow.title}. Actions count: ${workflow.actions.length}`);
         for (const action of workflow.actions) {
+            console.log(`[IG Service] Running action type: ${action.type}`);
             if (action.type === "SEND_DM" || action.type === "REPLY_COMMENT") {
                 const config = action.configJson as any;
+                console.log(`[IG Service] Action Config: ${JSON.stringify(config)}`);
 
                 // 1. Send DM (Private Reply if commentId exists)
                 // Always send if replyMessage is present (User expectation: "DM message")

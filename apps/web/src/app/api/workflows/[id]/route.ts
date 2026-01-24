@@ -64,11 +64,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
                 // Delete existing triggers and recreate based on graph
                 await prisma.workflowTrigger.deleteMany({ where: { workflowId: params.id } });
                 await prisma.workflowTrigger.createMany({
-                    data: triggerNodes.map((n: any) => ({
-                        workflowId: params.id,
-                        type: n.data.type || (n.type === 'trigger_comment' ? 'FEED_COMMENT' : n.type === 'trigger_mention' ? 'STORY_REPLY' : 'DM_RECEIVED'),
-                        configJson: n.data.config || {}
-                    }))
+                    data: triggerNodes.map((n: any) => {
+                        const config = n.data.config || {};
+                        return {
+                            workflowId: params.id,
+                            type: n.data.type || (n.type === 'trigger_comment' ? 'FEED_COMMENT' : n.type === 'trigger_mention' ? 'STORY_REPLY' : 'DM_RECEIVED'),
+                            configJson: {
+                                keywords: config.keyword ? [config.keyword.toLowerCase().trim()] : [],
+                                matchMode: config.matchType || 'contains'
+                            }
+                        };
+                    })
                 });
             }
 
@@ -77,11 +83,42 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
             if (actionNodes.length > 0) {
                 await prisma.workflowAction.deleteMany({ where: { workflowId: params.id } });
                 await prisma.workflowAction.createMany({
-                    data: actionNodes.map((n: any) => ({
-                        workflowId: params.id,
-                        type: n.type === 'instagram' ? (n.data.content?.imageUrl ? 'SEND_CARD' : 'SEND_DM') : n.type.toUpperCase(),
-                        configJson: n.type === 'instagram' ? (n.data.content || {}) : (n.data || {})
-                    }))
+                    data: actionNodes.map((n: any) => {
+                        const content = n.data.content || {};
+                        const data = n.data || {};
+
+                        // Map node data to what instagram-service.ts expects
+                        let type = 'SEND_DM';
+                        let configJson: any = {};
+
+                        if (n.type === 'instagram') {
+                            type = 'SEND_DM';
+                            configJson = {
+                                replyMessage: content.message || '',
+                                imageUrl: content.imageUrl || '',
+                                buttons: content.buttons || [],
+                                cta: content.cta || { enabled: false }
+                            };
+                        } else if (n.type === 'ai_response') {
+                            type = 'AI_RESPONSE';
+                            configJson = {
+                                prompt: data.prompt || '',
+                                model: data.model || 'gpt-4o-mini'
+                            };
+                        } else if (n.type === 'webhook') {
+                            type = 'WEBHOOK';
+                            configJson = {
+                                url: data.url || '',
+                                method: data.method || 'POST'
+                            };
+                        }
+
+                        return {
+                            workflowId: params.id,
+                            type,
+                            configJson
+                        };
+                    })
                 });
             }
         }
