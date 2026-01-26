@@ -381,11 +381,21 @@ async function executeWorkflowNode(workflow: any, account: any, recipientId: str
             return;
         }
         else if (nextNode.type === 'tag') {
-            const tags = nextNode.data?.tags || [];
+            const newTags = nextNode.data?.tags || [];
+
+            // Fetch current tags to merge (Additive behavior)
+            const follower = await prisma.instagramFollower.findUnique({
+                where: { igUserId_accountId: { igUserId: recipientId, accountId: account.id } }
+            });
+
+            const currentTags = follower?.tags || [];
+            // Merge and deduplicate
+            const updatedTags = Array.from(new Set([...currentTags, ...newTags]));
+
             await prisma.instagramFollower.upsert({
                 where: { igUserId_accountId: { igUserId: recipientId, accountId: account.id } },
-                create: { igUserId: recipientId, accountId: account.id, tags },
-                update: { tags: { set: tags } }
+                create: { igUserId: recipientId, accountId: account.id, tags: newTags },
+                update: { tags: { set: updatedTags } }
             });
             await executeWorkflowNode(workflow, account, recipientId, nextNode.id, runId, commentId);
         }
@@ -393,7 +403,11 @@ async function executeWorkflowNode(workflow: any, account: any, recipientId: str
             const follower = await prisma.instagramFollower.findUnique({
                 where: { igUserId_accountId: { igUserId: recipientId, accountId: account.id } }
             });
-            const matches = follower?.tags.includes(nextNode.data?.tag || '');
+
+            const userTags = follower?.tags || [];
+            const tagToCheck = nextNode.data?.tag || '';
+            const matches = userTags.includes(tagToCheck);
+
             const handle = matches ? 'true' : 'false';
             const branchEdge = (flow.edges || []).find((e: any) => e.source === nextNode.id && e.sourceHandle === handle);
             if (branchEdge) {
