@@ -11,8 +11,12 @@ import { processWebhookEvent } from './processor';
 
 const worker = new Worker('instagram-events', async (job) => {
     console.log(`Processing job ${job.id}: ${job.name}`);
+
     if (job.name === 'processWebhookEvent') {
         await processWebhookEvent(job.data.eventId);
+    } else if (job.name === 'resumeWorkflow') {
+        const { resumeWorkflow } = require('./processor');
+        await resumeWorkflow(job.data);
     }
 }, {
     connection,

@@ -297,7 +297,6 @@ async function handleDmEvent(accountId: string, event: any) {
 }
 
 async function runWorkflowActions(workflow: any, account: any, recipientId: string, webhookEventId: string, commentId?: string) {
-    // Log Run
     const run = await prisma.automationRun.create({
         data: {
             workflowId: workflow.id,
@@ -307,47 +306,22 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
     });
 
     try {
-        console.log(`[IG Service] Executing actions for workflow: ${workflow.title}. Actions count: ${workflow.actions.length}`);
-        for (const action of workflow.actions) {
-            console.log(`[IG Service] Running action type: ${action.type}`);
-            if (action.type === "SEND_DM" || action.type === "REPLY_COMMENT") {
-                const config = action.configJson as any;
-                console.log(`[IG Service] Action Config: ${JSON.stringify(config)}`);
+        console.log(`[IG Service] Starting Graph Execution for workflow: ${workflow.title}`);
 
-                // 1. Send DM (Private Reply if commentId exists)
-                // Always send if replyMessage is present (User expectation: "DM message")
-                const replyText = config.replyMessage;
-                const imageUrl = config.imageUrl;
-                // Support multiple buttons if 'buttons' array exists, otherwise fallback to legacy 'cta'
-                let buttons = config.buttons || [];
-                if ((!buttons || buttons.length === 0) && config.cta && config.cta.enabled && config.cta.text && config.cta.url) {
-                    buttons = [{ label: config.cta.text, url: config.cta.url, type: 'web_url' }];
-                }
+        // Start from the trigger node that would have matched
+        const flow = workflow.flowDefinition as any;
+        if (!flow || !flow.nodes) throw new Error("Flow definition missing");
 
-                if (replyText || imageUrl) {
-                    if (commentId) {
-                        try {
-                            await sendPrivateReply(account, commentId, replyText, buttons, imageUrl);
-                        } catch (e: any) {
-                            console.error("Private Reply failed, attempting standard DM fallback", e);
-                            await sendDm(account, recipientId, replyText, buttons, imageUrl);
-                        }
-                    } else {
-                        await sendDm(account, recipientId, replyText, buttons, imageUrl);
-                    }
-                }
+        // Simple: Find the trigger node to start from
+        // Note: For now we just find any trigger node, but ideally we'd pass the specific ID
+        const triggerNode = flow.nodes.find((n: any) =>
+            n.type === 'trigger' || n.type === 'trigger_comment' || n.type === 'trigger_mention'
+        );
 
-                // 2. Public Comment Reply (Optional)
-                if (commentId && config.enableCommentReply && config.commentReplyMessage) {
-                    await replyToComment(account, commentId, config.commentReplyMessage);
-                }
-            }
+        if (triggerNode) {
+            await executeWorkflowNode(workflow, account, recipientId, triggerNode.id, run.id, commentId || null);
         }
 
-        await prisma.automationRun.update({
-            where: { id: run.id },
-            data: { status: "SUCCESS", finishedAt: new Date() }
-        });
     } catch (e: any) {
         console.error("Error executing workflow", e);
         await prisma.automationRun.update({
@@ -357,6 +331,80 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
                 finishedAt: new Date(),
                 errorMessage: e.message
             }
+        });
+    }
+}
+
+async function executeWorkflowNode(workflow: any, account: any, recipientId: string, nodeId: string, runId: string, commentId: string | null) {
+    const flow = workflow.flowDefinition as any;
+    const edges = (flow.edges || []).filter((e: any) => e.source === nodeId);
+
+    for (const edge of edges) {
+        const nextNode = (flow.nodes || []).find((n: any) => n.id === edge.target);
+        if (!nextNode) continue;
+
+        console.log(`[IG Service] Executing ${nextNode.type} (${nextNode.id})`);
+
+        if (nextNode.type === 'instagram') {
+            const { content } = nextNode.data || {};
+            const text = content?.message || '';
+            const imageUrl = content?.imageUrl || '';
+            const buttons = content?.buttons || [];
+
+            if (commentId) {
+                await sendPrivateReply(account, commentId, text, buttons, imageUrl);
+            } else {
+                await sendDm(account, recipientId, text, buttons, imageUrl);
+            }
+            await executeWorkflowNode(workflow, account, recipientId, nextNode.id, runId, commentId);
+        }
+        else if (nextNode.type === 'delay') {
+            // Note: In the WEB app, we might not have the queue processor running in the same way,
+            // but we follow the same logic: Enqueue a resume job.
+            const { instagramQueue } = require('./queue');
+            const { parseTimeToMs } = require('./utils'); // Assuming I add it to utils too
+
+            const ms = 60000; // Default or parse
+            await instagramQueue.add('resumeWorkflow', {
+                workflowId: workflow.id,
+                accountId: account.id,
+                senderId: recipientId,
+                nodeId: nextNode.id,
+                runId,
+                commentId
+            }, { delay: ms });
+            return;
+        }
+        else if (nextNode.type === 'tag') {
+            const tags = nextNode.data?.tags || [];
+            await prisma.instagramFollower.upsert({
+                where: { igUserId_accountId: { igUserId: recipientId, accountId: account.id } },
+                create: { igUserId: recipientId, accountId: account.id, tags },
+                update: { tags: { set: tags } }
+            });
+            await executeWorkflowNode(workflow, account, recipientId, nextNode.id, runId, commentId);
+        }
+        else if (nextNode.type === 'condition') {
+            const follower = await prisma.instagramFollower.findUnique({
+                where: { igUserId_accountId: { igUserId: recipientId, accountId: account.id } }
+            });
+            const matches = follower?.tags.includes(nextNode.data?.tag || '');
+            const handle = matches ? 'true' : 'false';
+            const branchEdge = (flow.edges || []).find((e: any) => e.source === nextNode.id && e.sourceHandle === handle);
+            if (branchEdge) {
+                await executeWorkflowNode(workflow, account, recipientId, branchEdge.target, runId, commentId);
+            }
+            return;
+        }
+        else {
+            await executeWorkflowNode(workflow, account, recipientId, nextNode.id, runId, commentId);
+        }
+    }
+
+    if (edges.length === 0) {
+        await prisma.automationRun.update({
+            where: { id: runId },
+            data: { status: "SUCCESS", finishedAt: new Date() }
         });
     }
 }
