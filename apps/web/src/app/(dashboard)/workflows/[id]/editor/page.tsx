@@ -610,6 +610,7 @@ function FlowEditor() {
                                                 updateNodeData(selectedNode.id, { time: `${val} ${e.target.value}` });
                                             }}
                                         >
+                                            <option value="segundo(s)">Segundo(s)</option>
                                             <option value="minuto(s)">Minuto(s)</option>
                                             <option value="hora(s)">Hora(s)</option>
                                             <option value="dia(s)">Dia(s)</option>
