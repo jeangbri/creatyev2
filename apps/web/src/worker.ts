@@ -1,4 +1,28 @@
+import fs from 'fs';
+import path from 'path';
 import { Worker } from 'bullmq';
+
+// Manually load .env to avoid dependencies
+try {
+    const envPath = path.resolve(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+        const envConfig = fs.readFileSync(envPath, 'utf-8');
+        envConfig.split('\n').forEach(line => {
+            const [key, ...values] = line.split('=');
+            if (key && values.length > 0 && !process.env[key.trim()]) {
+                let value = values.join('=').trim();
+                // Remove quotes
+                if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+                    value = value.slice(1, -1);
+                }
+                process.env[key.trim()] = value;
+            }
+        });
+        console.log('[Worker] Loaded .env file');
+    }
+} catch (e) {
+    console.warn('[Worker] Failed to load .env file manually', e);
+}
 import { resumeWorkflowFromJob } from './lib/instagram-service';
 import IORedis from 'ioredis';
 

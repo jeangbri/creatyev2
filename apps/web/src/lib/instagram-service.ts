@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma";
-import { decrypt } from "@/lib/encryption";
+import { prisma } from "./prisma";
+import { decrypt } from "./encryption";
 
 const IG_API_URL = "https://graph.instagram.com/v21.0";
 

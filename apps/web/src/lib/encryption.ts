@@ -1,4 +1,7 @@
-import 'server-only';
+// import 'server-only'; // Disabled for worker compatibility
+if (typeof window !== 'undefined') {
+    // throw new Error('This file should not be imported on the client.');
+}
 import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-cbc';
