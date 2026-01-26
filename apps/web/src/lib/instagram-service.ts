@@ -359,12 +359,12 @@ async function executeWorkflowNode(workflow: any, account: any, recipientId: str
             await executeWorkflowNode(workflow, account, recipientId, nextNode.id, runId, commentId);
         }
         else if (nextNode.type === 'delay') {
-            // Note: In the WEB app, we might not have the queue processor running in the same way,
-            // but we follow the same logic: Enqueue a resume job.
             const { instagramQueue } = require('./queue');
-            const { parseTimeToMs } = require('./utils'); // Assuming I add it to utils too
+            const { parseTimeToMs } = require('./utils');
 
-            const ms = 60000; // Default or parse
+            const timeStr = nextNode.data?.time || '1 minuto';
+            const ms = parseTimeToMs(timeStr);
+
             await instagramQueue.add('resumeWorkflow', {
                 workflowId: workflow.id,
                 accountId: account.id,
