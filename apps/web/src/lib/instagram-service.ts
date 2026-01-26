@@ -566,3 +566,30 @@ async function replyToComment(account: any, commentId: string, text: string) {
     return data;
 }
 
+export async function resumeWorkflowFromJob(data: any) {
+    console.log(`[Worker] Resuming workflow run ${data.runId} at node ${data.nodeId}`);
+
+    // 1. Fetch Workflow & Account
+    const workflow = await prisma.workflow.findUnique({
+        where: { id: data.workflowId },
+        include: { triggers: true, actions: true }
+    });
+
+    const account = await prisma.instagramAccount.findUnique({
+        where: { id: data.accountId },
+        include: { workspace: true }
+    });
+
+    if (!workflow || !account) {
+        console.error("[Worker] Workflow or Account not found", data);
+        await prisma.automationRun.update({
+            where: { id: data.runId },
+            data: { status: "ERROR", errorMessage: "Resuming failed: Context lost" }
+        });
+        return;
+    }
+
+    // 2. Call executeWorkflowNode
+    await executeWorkflowNode(workflow, account, data.senderId, data.nodeId, data.runId, data.commentId);
+}
+
