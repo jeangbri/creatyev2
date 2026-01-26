@@ -359,24 +359,25 @@ async function executeWorkflowNode(workflow: any, account: any, recipientId: str
             await executeWorkflowNode(workflow, account, recipientId, nextNode.id, runId, commentId);
         }
         else if (nextNode.type === 'delay') {
-            const { instagramQueue } = require('./queue');
+            const { scheduleWorkflowResume } = require('./qstash');
             const { parseTimeToMs } = require('./utils');
 
             const timeStr = nextNode.data?.time || '1 minuto';
             const ms = parseTimeToMs(timeStr);
+            const seconds = Math.ceil(ms / 1000);
 
-            console.log(`[IG Service] ⏳ Queueing Delay. String="${timeStr}", Ms=${ms}. Job: resumeWorkflow`);
+            console.log(`[IG Service] ⏳ Scheduling QStash Delay. String="${timeStr}", Seconds=${seconds}. Job: resumeWorkflow`);
 
-            await instagramQueue.add('resumeWorkflow', {
+            await scheduleWorkflowResume(seconds, {
                 workflowId: workflow.id,
                 accountId: account.id,
                 senderId: recipientId,
                 nodeId: nextNode.id,
                 runId,
                 commentId
-            }, { delay: ms });
+            });
 
-            console.log(`[IG Service] ✅ Job Queued successfully.`);
+            console.log(`[IG Service] ✅ Job Scheduled on QStash successfully.`);
             return;
         }
         else if (nextNode.type === 'tag') {

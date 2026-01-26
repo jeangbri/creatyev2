@@ -74,6 +74,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.91.0
+      '@upstash/qstash':
+        specifier: ^2.9.0
+        version: 2.9.0
       '@xyflow/react':
         specifier: ^12.10.0
         version: 12.10.0(@types/react@18.3.27)(react-dom@18.3.1)(react@18.3.1)
@@ -1864,6 +1867,14 @@ packages:
     dev: true
     optional: true
 
+  /@upstash/qstash@2.9.0:
+    resolution: {integrity: sha512-RFvWB98ot5SXUZFIV/Av6hYdS+yu700kg+azUaJqV/fqgylUrWkYnCTOE4DJgdMHUEb0l7tH2Xhl70Zd4Q4zHw==}
+    dependencies:
+      crypto-js: 4.2.0
+      jose: 5.10.0
+      neverthrow: 7.2.0
+    dev: false
+
   /@xyflow/react@12.10.0(@types/react@18.3.27)(react-dom@18.3.1)(react@18.3.1):
     resolution: {integrity: sha512-eOtz3whDMWrB4KWVatIBrKuxECHqip6PfA8fTpaS2RUGVpiEAe+nqDKsLqkViVWxDGreq0lWX71Xth/SPAzXiw==}
     peerDependencies:
@@ -3623,6 +3634,10 @@ packages:
     resolution: {integrity: sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==}
     hasBin: true
 
+  /jose@5.10.0:
+    resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
+    dev: false
+
   /js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
@@ -3848,6 +3863,11 @@ packages:
   /natural-compare@1.4.0:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
     dev: true
+
+  /neverthrow@7.2.0:
+    resolution: {integrity: sha512-iGBUfFB7yPczHHtA8dksKTJ9E8TESNTAx1UQWW6TzMF280vo9jdPYpLUXrMN1BCkPdHFdNG3fxOt2CUad8KhAw==}
+    engines: {node: '>=18'}
+    dev: false
 
   /next@14.1.0(react-dom@18.3.1)(react@18.3.1):
     resolution: {integrity: sha512-wlzrsbfeSU48YQBjZhDzOwhWhGsy+uQycR8bHAOt1LY1bn3zZEcDyHQOEoN3aWzQ8LHCAJ1nqrWCc9XF2+O45Q==}
