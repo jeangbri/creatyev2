@@ -32,8 +32,11 @@ export async function POST(req: Request) {
 
         if (error) {
             console.error("Upload Error:", error);
-            // Hint for the user in the error message
-            return NextResponse.json({ error: `Upload failed: ${error.message}. Ensure bucket '${bucketName}' exists.` }, { status: 500 });
+            return NextResponse.json({
+                error: `Falha no upload: ${error.message}`,
+                details: error,
+                hint: `Verifique se o bucket '${bucketName}' existe e tem políticas públicas.`
+            }, { status: 500 });
         }
 
         const { data: publicUrlData } = supabase.storage
@@ -43,6 +46,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ url: publicUrlData.publicUrl });
     } catch (e: any) {
         console.error("Server Upload Error:", e);
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        return NextResponse.json({ error: e.message || "Erro interno no servidor" }, { status: 500 });
     }
 }

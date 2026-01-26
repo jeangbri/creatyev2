@@ -317,22 +317,23 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
                 // 1. Send DM (Private Reply if commentId exists)
                 // Always send if replyMessage is present (User expectation: "DM message")
                 const replyText = config.replyMessage;
+                const imageUrl = config.imageUrl;
                 // Support multiple buttons if 'buttons' array exists, otherwise fallback to legacy 'cta'
                 let buttons = config.buttons || [];
                 if ((!buttons || buttons.length === 0) && config.cta && config.cta.enabled && config.cta.text && config.cta.url) {
                     buttons = [{ label: config.cta.text, url: config.cta.url, type: 'web_url' }];
                 }
 
-                if (replyText) {
+                if (replyText || imageUrl) {
                     if (commentId) {
                         try {
-                            await sendPrivateReply(account, commentId, replyText, buttons);
+                            await sendPrivateReply(account, commentId, replyText, buttons, imageUrl);
                         } catch (e: any) {
                             console.error("Private Reply failed, attempting standard DM fallback", e);
-                            await sendDm(account, recipientId, replyText, buttons);
+                            await sendDm(account, recipientId, replyText, buttons, imageUrl);
                         }
                     } else {
-                        await sendDm(account, recipientId, replyText, buttons);
+                        await sendDm(account, recipientId, replyText, buttons, imageUrl);
                     }
                 }
 
@@ -360,16 +361,40 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
     }
 }
 
-async function sendDm(account: any, recipientId: string, text: string, buttons?: any[]) {
+async function sendDm(account: any, recipientId: string, text: string, buttons?: any[], imageUrl?: string) {
     let accessToken = decrypt(account.accessTokenEncrypted).trim();
 
-    console.log(`[IG Service] Sending DM to ${recipientId}. Buttons: ${buttons?.length || 0}`);
+    console.log(`[IG Service] Sending DM to ${recipientId}. Image: ${!!imageUrl}, Buttons: ${buttons?.length || 0}`);
 
     const url = `${IG_API_URL}/me/messages?access_token=${accessToken}`;
 
     let body;
 
-    if (buttons && buttons.length > 0) {
+    if (imageUrl) {
+        // Generic Template for Image + Text + Buttons
+        body = {
+            recipient: { id: recipientId },
+            message: {
+                attachment: {
+                    type: "template",
+                    payload: {
+                        template_type: "generic",
+                        elements: [
+                            {
+                                title: text || " ", // Title is required for generic template
+                                image_url: imageUrl,
+                                buttons: buttons && buttons.length > 0 ? buttons.slice(0, 3).map(b => ({
+                                    type: "web_url",
+                                    url: b.url,
+                                    title: b.label
+                                })) : undefined
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+    } else if (buttons && buttons.length > 0) {
         body = {
             recipient: { id: recipientId },
             message: {
@@ -404,16 +429,39 @@ async function sendDm(account: any, recipientId: string, text: string, buttons?:
     return data;
 }
 
-async function sendPrivateReply(account: any, commentId: string, text: string, buttons?: any[]) {
+async function sendPrivateReply(account: any, commentId: string, text: string, buttons?: any[], imageUrl?: string) {
     let accessToken = decrypt(account.accessTokenEncrypted).trim();
 
-    console.log(`[IG Service] Sending Private Reply to Comment ${commentId}. Buttons: ${buttons?.length || 0}`);
+    console.log(`[IG Service] Sending Private Reply to Comment ${commentId}. Image: ${!!imageUrl}, Buttons: ${buttons?.length || 0}`);
 
     const url = `${IG_API_URL}/me/messages?access_token=${accessToken}`;
 
     let body;
 
-    if (buttons && buttons.length > 0) {
+    if (imageUrl) {
+        body = {
+            recipient: { comment_id: commentId },
+            message: {
+                attachment: {
+                    type: "template",
+                    payload: {
+                        template_type: "generic",
+                        elements: [
+                            {
+                                title: text || " ",
+                                image_url: imageUrl,
+                                buttons: buttons && buttons.length > 0 ? buttons.slice(0, 3).map(b => ({
+                                    type: "web_url",
+                                    url: b.url,
+                                    title: b.label
+                                })) : undefined
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+    } else if (buttons && buttons.length > 0) {
         // Attempting Button Template for Private Reply
         body = {
             recipient: { comment_id: commentId },

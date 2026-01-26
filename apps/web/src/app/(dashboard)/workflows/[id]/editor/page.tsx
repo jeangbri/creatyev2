@@ -495,16 +495,21 @@ function FlowEditor() {
                                                                 const formData = new FormData();
                                                                 formData.append("file", file);
                                                                 toast.promise(
-                                                                    fetch('/api/upload', { method: 'POST', body: formData }).then(res => res.json()),
+                                                                    async () => {
+                                                                        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                                                                        const data = await res.json();
+                                                                        if (!res.ok) throw new Error(data.error || 'Erro no upload');
+                                                                        return data;
+                                                                    },
                                                                     {
-                                                                        loading: 'Enviando...',
+                                                                        loading: 'Enviando imagem...',
                                                                         success: (data) => {
                                                                             updateNodeData(selectedNode.id, {
                                                                                 content: { ...(selectedNode.data as any).content, imageUrl: data.url }
                                                                             });
-                                                                            return 'Enviado!';
+                                                                            return 'Imagem enviada com sucesso!';
                                                                         },
-                                                                        error: 'Erro no upload'
+                                                                        error: (err) => `${err.message}`
                                                                     }
                                                                 );
                                                             }}
