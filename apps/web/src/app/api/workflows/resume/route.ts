@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifySignatureAppRouter } from "@upstash/qstash/dist/nextjs";
 import { resumeWorkflowFromJob } from "@/lib/instagram-service";
 
+export const dynamic = 'force-dynamic';
+
 async function handler(req: NextRequest) {
     console.log("[API/Resume] Received resume request from QStash");
 
