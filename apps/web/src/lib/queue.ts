@@ -12,16 +12,18 @@ const shouldMock = !!process.env.VERCEL && !redisUrl;
 let q: Queue;
 
 if (shouldMock) {
-    console.warn("⚠️ Vercel Build Environment detected without REDIS_URL - Using Mock Queue to prevent build crash.");
+    console.warn("⚠️ [Queue] Using Mock Queue (VERCEL env detected + No REDIS_URL).");
     q = {
         add: async (name: string, data: any) => {
-            console.log(`[MockQueue] Added job ${name}`);
+            console.log(`[Queue Mock] Added job ${name}`, data);
             return {} as any;
         },
         close: async () => { },
         waitUntilReady: async () => { },
     } as unknown as Queue;
 } else {
+    // console.log("[Queue] Initializing Real Redis Queue...");
+
     const url = redisUrl || 'redis://localhost:6379';
 
     const connection =
@@ -35,7 +37,7 @@ if (shouldMock) {
 
     try {
         q = new Queue('instagram-events', {
-            connection: connection,
+            connection: connection as any,
             defaultJobOptions: {
                 attempts: 3,
                 backoff: {

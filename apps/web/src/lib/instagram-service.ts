@@ -365,6 +365,8 @@ async function executeWorkflowNode(workflow: any, account: any, recipientId: str
             const timeStr = nextNode.data?.time || '1 minuto';
             const ms = parseTimeToMs(timeStr);
 
+            console.log(`[IG Service] ⏳ Queueing Delay. String="${timeStr}", Ms=${ms}. Job: resumeWorkflow`);
+
             await instagramQueue.add('resumeWorkflow', {
                 workflowId: workflow.id,
                 accountId: account.id,
@@ -373,6 +375,8 @@ async function executeWorkflowNode(workflow: any, account: any, recipientId: str
                 runId,
                 commentId
             }, { delay: ms });
+
+            console.log(`[IG Service] ✅ Job Queued successfully.`);
             return;
         }
         else if (nextNode.type === 'tag') {
