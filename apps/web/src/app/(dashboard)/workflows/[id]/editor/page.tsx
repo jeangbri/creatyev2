@@ -170,7 +170,7 @@ function FlowEditor() {
             if (type === 'instagram') {
                 newNode.data = { title: 'Mensagem', subtitle: 'Enviar mensagem', type: 'reply', content: { message: '', buttons: [] } }
             } else if (type === 'delay') {
-                newNode.data = { time: '1 hora' }
+                newNode.data = { time: '1 minuto(s)' }
             } else if (type === 'tag') {
                 newNode.data = { tags: ['NOVAS_TAGS'] }
             } else if (type === 'trigger') {
@@ -598,13 +598,17 @@ function FlowEditor() {
                                             type="number"
                                             value={parseInt((selectedNode.data as any).time) || 1}
                                             onChange={(e) => {
-                                                const unit = (selectedNode.data as any).time?.split(' ')?.[1] || 'hora(s)';
+                                                const currentUnit = (selectedNode.data as any).time?.split(' ')?.[1];
+                                                // Normalize unit if needed or default to minuto(s)
+                                                let unit = currentUnit || 'minuto(s)';
+                                                if (!unit.includes('(')) unit = unit + '(s)'; // Simple fix for legacy data
+
                                                 updateNodeData(selectedNode.id, { time: `${e.target.value} ${unit}` });
                                             }}
                                         />
                                         <select
                                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                            value={(selectedNode.data as any).time?.split(' ')?.[1] || 'hora(s)'}
+                                            value={(selectedNode.data as any).time?.split(' ')?.[1]?.replace(/^(hora|minuto|dia|segundo)$/, '$1(s)') || 'minuto(s)'}
                                             onChange={(e) => {
                                                 const val = parseInt((selectedNode.data as any).time) || 1;
                                                 updateNodeData(selectedNode.id, { time: `${val} ${e.target.value}` });
