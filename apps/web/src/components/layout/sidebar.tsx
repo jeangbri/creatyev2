@@ -67,7 +67,13 @@ export function Sidebar() {
     return (
         <div className="flex h-screen w-64 flex-col border-r bg-card text-card-foreground">
             <div className="p-6">
-                <h1 className="text-2xl font-bold text-primary">Creatye</h1>
+                <Link href="/dashboard" className="block">
+                    <img
+                        src="https://i.imgur.com/Ntmpj8g.png"
+                        alt="Creatye Logo"
+                        className="h-8 w-auto object-contain transition-transform hover:scale-105"
+                    />
+                </Link>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-2">
