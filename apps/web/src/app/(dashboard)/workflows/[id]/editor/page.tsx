@@ -181,6 +181,8 @@ function FlowEditor() {
                 newNode.data = { type: 'trigger_mention', config: { keyword: '', matchType: 'contains' } }
             } else if (type === 'ai_response') {
                 newNode.data = { prompt: 'Você é um assistente prestativo. Responda a dúvida do cliente baseada no contexto...', model: 'gpt-4o-mini' }
+            } else if (type === 'condition') {
+                newNode.data = { condition: { field: 'tag', operator: 'has_tag', value: '' } }
             } else if (type === 'webhook') {
                 newNode.data = { url: '', method: 'POST', headers: {} }
             }
@@ -661,6 +663,56 @@ function FlowEditor() {
                                         >
                                             <Plus className="w-4 h-4 mr-2" /> Adicionar Tag
                                         </Button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* CONDITION CONFIG */}
+                            {selectedNode.type === 'condition' && (
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-700">Tipo de Campo</label>
+                                        <select
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm bg-slate-50"
+                                            value={(selectedNode.data as any).condition?.field || 'tag'}
+                                            onChange={(e) => updateNodeData(selectedNode.id, {
+                                                condition: { ...(selectedNode.data as any).condition, field: e.target.value }
+                                            })}
+                                        >
+                                            <option value="tag">Etiqueta</option>
+                                            <option value="custom_field">Campo Personalizado</option>
+                                            <option value="follower_status">Status de Seguidor</option>
+                                            <option value="contact_score">Pontuação do Contato</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-700">Operação</label>
+                                        <select
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm bg-slate-50"
+                                            value={(selectedNode.data as any).condition?.operator || 'has_tag'}
+                                            onChange={(e) => updateNodeData(selectedNode.id, {
+                                                condition: { ...(selectedNode.data as any).condition, operator: e.target.value }
+                                            })}
+                                        >
+                                            <option value="has_tag">Tem etiqueta</option>
+                                            <option value="not_has_tag">Não tem etiqueta</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-700">Etiqueta</label>
+                                        <Input
+                                            className="bg-slate-50"
+                                            placeholder="Ex: REELS GERAL"
+                                            value={(selectedNode.data as any).condition?.value || ''}
+                                            onChange={(e) => updateNodeData(selectedNode.id, {
+                                                condition: { ...(selectedNode.data as any).condition, value: e.target.value }
+                                            })}
+                                        />
+                                        <p className="text-[10px] text-slate-400">
+                                            Digite exatamente o nome da etiqueta (Tag) que deseja verificar.
+                                        </p>
                                     </div>
                                 </div>
                             )}

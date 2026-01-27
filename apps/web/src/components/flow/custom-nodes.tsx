@@ -5,7 +5,7 @@ import { Handle, Position, NodeProps } from '@xyflow/react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Instagram, Image as ImageIcon, CheckCircle2, Play, Sparkles, Globe, AtSign, MessageCircle } from 'lucide-react';
+import { MessageSquare, Instagram, Image as ImageIcon, CheckCircle2, Play, Sparkles, Globe, AtSign, MessageCircle, GitFork } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 // Custom Instagram Card Node
@@ -361,34 +361,73 @@ export const WebhookNode = memo(({ data, selected }: NodeProps) => {
 
 // Condition Node
 export const ConditionNode = memo(({ data, selected }: NodeProps) => {
+    const condition = (data as any).condition || {};
+    // Construct label (e.g. "Etiqueta 'REELS GERAL'")
+    const label = condition.value
+        ? `${condition.field === 'tag' ? 'Etiqueta' : 'Campo'} "${condition.value}"`
+        : 'Configurar condição';
+
     return (
         <div className={cn(
-            "w-[280px] shadow-sm rounded-xl bg-white border transition-all",
+            "w-[300px] shadow-lg rounded-xl bg-white border-2 transition-all font-sans",
             selected ? "border-blue-500 ring-2 ring-blue-200" : "border-slate-200",
             "hover:border-blue-300"
         )}>
-            <Handle type="target" position={Position.Left} className="!bg-blue-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -ml-2" />
+            <Handle
+                type="target"
+                position={Position.Left}
+                className="!bg-blue-500 !w-4 !h-4 !border-4 !border-white !shadow-sm -ml-2"
+            />
 
-            <div className="p-4 border-b">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-cyan-100 text-cyan-600 rounded-lg">
-                        <div className="w-5 h-5 flex items-center justify-center font-bold text-xs">❓</div>
+            {/* Header */}
+            <div className="p-4 border-b border-slate-100 pb-3">
+                <div className="flex items-start gap-3">
+                    <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                        <GitFork size={20} className="rotate-90" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-slate-800">Condicional</h3>
-                        <p className="text-xs text-slate-500">Avaliação condicional</p>
+                        <h3 className="font-semibold text-slate-800 text-sm">Condicional</h3>
+                        <p className="text-[10px] text-slate-500">Avaliação condicional.</p>
                     </div>
                 </div>
             </div>
 
-            <div className="p-2 bg-slate-50 space-y-2 rounded-b-xl">
-                <div className="bg-green-100 text-green-700 text-xs font-bold px-3 py-2 rounded border border-green-200 flex justify-between items-center">
-                    <span>SIM</span>
-                    <Handle type="source" position={Position.Right} id="true" className="!bg-green-500 !w-3 !h-3 !border-2 !border-white !right-[-8px] !relative !transform-none" />
+            {/* Content */}
+            <div className="p-4 space-y-4 pt-3">
+                <p className="text-[10px] text-slate-400 text-center">
+                    Estamos coletando métricas deste bloco...
+                </p>
+
+                {/* Condition Label */}
+                <div className="bg-slate-50 border border-slate-100 rounded-lg py-3 px-2 text-center">
+                    <p className="text-sm font-medium text-slate-700 truncate">
+                        {label}
+                    </p>
                 </div>
-                <div className="bg-red-100 text-red-700 text-xs font-bold px-3 py-2 rounded border border-red-200 flex justify-between items-center">
-                    <span>NÃO</span>
-                    <Handle type="source" position={Position.Right} id="false" className="!bg-red-500 !w-3 !h-3 !border-2 !border-white !right-[-8px] !relative !transform-none" />
+
+                {/* Outputs */}
+                <div className="space-y-2">
+                    {/* SIM */}
+                    <div className="relative bg-emerald-50 border border-emerald-100 rounded-md h-9 flex items-center justify-center">
+                        <span className="text-emerald-600 font-bold text-xs tracking-wider">SIM</span>
+                        <Handle
+                            type="source"
+                            position={Position.Right}
+                            id="true"
+                            className="!bg-blue-500 !w-3 !h-3 !border-2 !border-white !right-[-6px] !top-1/2 !-translate-y-1/2"
+                        />
+                    </div>
+
+                    {/* NÃO */}
+                    <div className="relative bg-rose-50 border border-rose-100 rounded-md h-9 flex items-center justify-center">
+                        <span className="text-rose-600 font-bold text-xs tracking-wider">NÃO</span>
+                        <Handle
+                            type="source"
+                            position={Position.Right}
+                            id="false"
+                            className="!bg-blue-500 !w-3 !h-3 !border-2 !border-white !right-[-6px] !top-1/2 !-translate-y-1/2"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
