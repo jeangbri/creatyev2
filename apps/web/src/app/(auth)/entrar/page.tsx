@@ -46,7 +46,7 @@ export default function LoginPage() {
             {/* Logo Section - Removed Box and Made Larger */}
             <div className="flex flex-col items-center justify-center animate-in fade-in slide-in-from-top-4 duration-1000">
                 <img
-                    src="https://i.imgur.com/Ntmpj8g.png"
+                    src="https://i.imgur.com/tndREaM.png"
                     alt="Creatye Logo"
                     className="w-48 h-auto object-contain drop-shadow-[0_0_15px_rgba(6,182,212,0.2)]"
                 />

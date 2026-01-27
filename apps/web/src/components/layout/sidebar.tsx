@@ -69,7 +69,7 @@ export function Sidebar() {
             <div className="p-6">
                 <Link href="/dashboard" className="block">
                     <img
-                        src="https://i.imgur.com/Ntmpj8g.png"
+                        src="https://i.imgur.com/iCAOndq.png"
                         alt="Creatye Logo"
                         className="h-8 w-auto object-contain transition-transform hover:scale-105"
                     />
