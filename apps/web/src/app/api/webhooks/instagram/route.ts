@@ -116,10 +116,16 @@ export async function POST(req: NextRequest) {
         return new NextResponse("Invalid Signature", { status: 401 });
     }
 
-    // Enqueue
-    await instagramQueue.add('processWebhookEvent', {
-        eventId: event.id
-    });
+    // Enqueue or Process Inline?
+    // Vercel Serverless doesn't support long running tasks well, but for simple flows inline is safer than relying on a worker that might not be running.
+    // We await the processing. This adds latency but ensures it runs on Vercel.
+    try {
+        const { handleWebhookJob } = await import("@/lib/instagram-service");
+        // Pass payload directly to avoid DB read race condition
+        await handleWebhookJob(event.id, payload);
+    } catch (e) {
+        console.error("Inline processing failed", e);
+    }
 
     return NextResponse.json({ ok: true });
 }

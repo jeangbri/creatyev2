@@ -3,34 +3,131 @@ import { decrypt } from "./encryption";
 
 const IG_API_URL = "https://graph.instagram.com/v21.0";
 
-export async function processInstagramEvent(body: any, signature: string | null) {
-    // 1. Log basics
-    const object = body.object;
-    if (object !== "instagram" && object !== "page") {
-        return;
+// NEW: Queue Job Handler or Inline Processor
+export async function handleWebhookJob(eventId: string, payloadOverride?: any) {
+    let body;
+    if (payloadOverride) {
+        body = payloadOverride;
+    } else {
+        const event = await prisma.webhookEvent.findUnique({ where: { id: eventId } });
+        if (!event) return;
+        body = event.payloadJson as any;
     }
 
-    // 2. Iterate entries
-    for (const entry of body.entry) {
-        const platformEventId = entry.id; // Usually the account ID or similar
-        const messaging = entry.messaging || entry.changes; // 'messaging' for DMs, 'changes' for comments
+    try {
+        const object = body.object;
+        if (object !== "instagram" && object !== "page") {
+            return;
+        }
 
-        if (!messaging) continue;
+        for (const entry of body.entry) {
+            const messaging = entry.messaging || entry.changes;
+            if (!messaging) continue;
 
-        for (const event of messaging) {
-            // Handle DM
-            if (event.message) {
-                await handleDmEvent(entry.id, event);
-            }
-            // Handle Comments
-            if (event.field === 'comments') {
-                await handleCommentEvent(entry.id, event);
+            for (const change of messaging) {
+                if (change.message) {
+                    await handleDmEvent(entry.id, change, eventId);
+                }
+                if (change.field === 'comments') {
+                    await handleCommentEvent(entry.id, change, eventId);
+                }
             }
         }
+
+        await prisma.webhookEvent.update({
+            where: { id: eventId },
+            data: { processingStatus: "DONE", processedAt: new Date() }
+        });
+    } catch (e: any) {
+        console.error("Error processing webhook event", e);
+        await prisma.webhookEvent.update({
+            where: { id: eventId },
+            data: { processingStatus: "ERROR", lastError: e.message }
+        });
     }
 }
 
-async function handleCommentEvent(accountId: string, event: any) {
+export async function processInstagramEvent(body: any, signature: string | null) {
+    // Legacy helper - redirects to job logic
+    // Usually called directly in some older versions.
+}
+
+async function upsertContact(account: any, instagramId: string) {
+    if (!instagramId) return;
+    try {
+        const token = decrypt(account.accessTokenEncrypted).trim();
+        const fields = "id,username,name,profile_picture_url,follower_count,is_verified";
+        const url = `${IG_API_URL}/${instagramId}?fields=${fields}&access_token=${token}`;
+
+        const res = await fetch(url);
+        const userData = await res.json();
+
+        if (userData.error) {
+            console.error(`[IG Service] Contact Fetch Error for ${instagramId}:`, userData.error);
+            const existing = await prisma.contact.findUnique({
+                where: { workspaceId_instagramId: { workspaceId: account.workspaceId, instagramId } }
+            });
+            if (!existing) {
+                await prisma.contact.create({
+                    data: {
+                        workspaceId: account.workspaceId,
+                        instagramId,
+                        fullName: "Instagram User",
+                        lastInteraction: new Date()
+                    }
+                });
+            } else {
+                await prisma.contact.update({
+                    where: { id: existing.id },
+                    data: { lastInteraction: new Date() }
+                });
+            }
+            return;
+        }
+
+        const name = userData.name || userData.username || "Instagram User";
+
+        await prisma.contact.upsert({
+            where: { workspaceId_instagramId: { workspaceId: account.workspaceId, instagramId } },
+            create: {
+                workspaceId: account.workspaceId,
+                instagramId,
+                username: userData.username || null,
+                fullName: name,
+                profilePicUrl: userData.profile_picture_url || null,
+                isVerified: userData.is_verified || false,
+                followerCount: userData.follower_count || 0,
+                isFollowing: false,
+                lastInteraction: new Date()
+            },
+            update: {
+                username: userData.username || undefined,
+                fullName: name,
+                profilePicUrl: userData.profile_picture_url || undefined,
+                isVerified: userData.is_verified || undefined,
+                followerCount: userData.follower_count || undefined,
+                lastInteraction: new Date()
+            }
+        });
+        console.log(`[IG Service] Contact upserted: ${instagramId}, Name: ${name}`);
+    } catch (e) {
+        console.error(`[IG Service] Failed to execute upsert contact ${instagramId}`, e);
+        try {
+            await prisma.contact.upsert({
+                where: { workspaceId_instagramId: { workspaceId: account.workspaceId, instagramId } },
+                create: {
+                    workspaceId: account.workspaceId,
+                    instagramId,
+                    fullName: "Instagram User (Network Err)",
+                    lastInteraction: new Date()
+                },
+                update: { lastInteraction: new Date() }
+            });
+        } catch (ignore) { }
+    }
+}
+
+async function handleCommentEvent(accountId: string, event: any, eventId?: string) {
     const value = event.value;
     const fromId = value.from.id; // User who successfully commented
     const mediaId = value.media.id; // The Post ID
@@ -57,18 +154,8 @@ async function handleCommentEvent(accountId: string, event: any) {
         return;
     }
 
-    // 2. Log Webhook Event
-    const webhookEvent = await prisma.webhookEvent.create({
-        data: {
-            workspaceId: account.workspaceId,
-            platform: "INSTAGRAM",
-            eventType: "FEED_COMMENT",
-            platformEventId: commentId,
-            payloadJson: event,
-            signatureValid: true,
-            processingStatus: "PROCESSING"
-        }
-    });
+    // 2. Create/Update Contact
+    await upsertContact(account, fromId);
 
     // 3. Find Workflows
     const workflows = await prisma.workflow.findMany({
@@ -131,18 +218,14 @@ async function handleCommentEvent(accountId: string, event: any) {
             // BUT "Private Replies" to comments is a specific API: POST /me/messages with recipient: { comment_id: ... }
             // Let's see if runWorkflowActions needs adjustment.
 
-            await runWorkflowActions(workflow, account, fromId, webhookEvent.id, commentId);
+            await runWorkflowActions(workflow, account, fromId, eventId || 'temporary-id', commentId);
         }
     }
 
-    // Update status
-    await prisma.webhookEvent.update({
-        where: { id: webhookEvent.id },
-        data: { processingStatus: "DONE", processedAt: new Date() }
-    });
 }
 
-async function handleDmEvent(accountId: string, event: any) {
+
+async function handleDmEvent(accountId: string, event: any, eventId?: string) {
     const senderId = event.sender.id;
     const recipientId = event.recipient.id;
     const message = event.message;
@@ -222,18 +305,8 @@ async function handleDmEvent(accountId: string, event: any) {
 
     console.log(`[IG Service] Account identified: ${account.username}`);
 
-    // 2. Log Webhook Event
-    const webhookEvent = await prisma.webhookEvent.create({
-        data: {
-            workspaceId: account.workspaceId,
-            platform: "INSTAGRAM",
-            eventType: isStoryReply ? "STORY_REPLY" : "DM_RECEIVED",
-            platformEventId: event.mid || `dm_${Date.now()}_${Math.random()}`, // Message ID
-            payloadJson: event,
-            signatureValid: true, // We assume validated in route
-            processingStatus: "PROCESSING"
-        }
-    });
+    // 2. Upsert Contact
+    await upsertContact(account, senderId);
 
     // 3. Find Workflows
     const workflows = await prisma.workflow.findMany({
@@ -285,16 +358,12 @@ async function handleDmEvent(accountId: string, event: any) {
 
         if (matched) {
             // Execute Actions
-            await runWorkflowActions(workflow, account, senderId, webhookEvent.id);
+            await runWorkflowActions(workflow, account, senderId, eventId || 'temporary-id');
         }
     }
 
-    // Update status
-    await prisma.webhookEvent.update({
-        where: { id: webhookEvent.id },
-        data: { processingStatus: "DONE", processedAt: new Date() }
-    });
 }
+
 
 async function runWorkflowActions(workflow: any, account: any, recipientId: string, webhookEventId: string, commentId?: string) {
     const run = await prisma.automationRun.create({
@@ -382,29 +451,31 @@ async function executeWorkflowNode(workflow: any, account: any, recipientId: str
         }
         else if (nextNode.type === 'tag') {
             const newTags = nextNode.data?.tags || [];
-
-            // Fetch current tags to merge (Additive behavior)
-            const follower = await prisma.instagramFollower.findUnique({
-                where: { igUserId_accountId: { igUserId: recipientId, accountId: account.id } }
+            const contact = await prisma.contact.findUnique({
+                where: { workspaceId_instagramId: { workspaceId: account.workspaceId, instagramId: recipientId } }
             });
 
-            const currentTags = follower?.tags || [];
-            // Merge and deduplicate
+            const currentTags = contact?.tags || [];
             const updatedTags = Array.from(new Set([...currentTags, ...newTags]));
 
-            await prisma.instagramFollower.upsert({
-                where: { igUserId_accountId: { igUserId: recipientId, accountId: account.id } },
-                create: { igUserId: recipientId, accountId: account.id, tags: newTags },
+            await prisma.contact.upsert({
+                where: { workspaceId_instagramId: { workspaceId: account.workspaceId, instagramId: recipientId } },
+                create: {
+                    workspaceId: account.workspaceId,
+                    instagramId: recipientId,
+                    tags: newTags,
+                    lastInteraction: new Date()
+                },
                 update: { tags: { set: updatedTags } }
             });
             await executeWorkflowNode(workflow, account, recipientId, nextNode.id, runId, commentId);
         }
         else if (nextNode.type === 'condition') {
-            const follower = await prisma.instagramFollower.findUnique({
-                where: { igUserId_accountId: { igUserId: recipientId, accountId: account.id } }
+            const contact = await prisma.contact.findUnique({
+                where: { workspaceId_instagramId: { workspaceId: account.workspaceId, instagramId: recipientId } }
             });
 
-            const userTags = follower?.tags || [];
+            const userTags = contact?.tags || [];
             const tagToCheck = nextNode.data?.tag || '';
             const matches = userTags.includes(tagToCheck);
 
