@@ -3,17 +3,31 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge" // Need Badge
-import { Instagram, RefreshCw, CheckCircle, XCircle } from 'lucide-react'
+import { Badge } from "@/components/ui/badge"
+import { Instagram, RefreshCw, CheckCircle, LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import { useLanguage } from '@/contexts/language-context'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function IntegrationsPage() {
     const [loading, setLoading] = useState(true)
+    const [disconnecting, setDisconnecting] = useState(false)
     const [account, setAccount] = useState<any>(null)
     const router = useRouter()
     const supabase = createClient()
+    const { t } = useLanguage()
 
     useEffect(() => {
         fetchStatus()
@@ -22,12 +36,9 @@ export default function IntegrationsPage() {
     const fetchStatus = async () => {
         try {
             setLoading(true)
-            // We need an endpoint to get current workspace's IG account
-            // For now, let's assume we have a user and we look up their workspace
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
 
-            // In real app, we fetch from API
             const res = await fetch('/api/instagram/status')
             if (res.ok) {
                 const data = await res.json()
@@ -41,7 +52,6 @@ export default function IntegrationsPage() {
     }
 
     const handleConnect = () => {
-        // Redirect to API route that initiates OAuth
         window.location.href = '/api/instagram/connect'
     }
 
@@ -49,11 +59,32 @@ export default function IntegrationsPage() {
         window.location.href = '/api/instagram/connect?revalidate=true'
     }
 
+    const handleDisconnect = async () => {
+        setDisconnecting(true)
+        try {
+            const res = await fetch('/api/instagram/disconnect', {
+                method: 'POST'
+            })
+
+            if (res.ok) {
+                setAccount(null)
+                toast.success(t('common.success'))
+                router.refresh()
+            } else {
+                toast.error(t('common.error'))
+            }
+        } catch (e) {
+            toast.error(t('common.error'))
+        } finally {
+            setDisconnecting(false)
+        }
+    }
+
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-3xl font-bold tracking-tight">Integrações</h2>
-                <p className="text-muted-foreground">Gerencie suas conexões com o Instagram e Facebook.</p>
+                <h2 className="text-3xl font-bold tracking-tight">{t('integrations.title')}</h2>
+                <p className="text-muted-foreground">{t('integrations.subtitle')}</p>
             </div>
 
             <Card>
@@ -64,16 +95,16 @@ export default function IntegrationsPage() {
                                 <Instagram className="h-6 w-6 text-pink-600 dark:text-pink-400" />
                             </div>
                             <div>
-                                <CardTitle>Instagram</CardTitle>
-                                <CardDescription>Conecte sua conta profissional para automações</CardDescription>
+                                <CardTitle>{t('integrations.instagram.title')}</CardTitle>
+                                <CardDescription>{t('integrations.instagram.description')}</CardDescription>
                             </div>
                         </div>
                         {account?.status === 'CONNECTED' ? (
                             <Badge variant="success" className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">
-                                <CheckCircle className="w-3 h-3 mr-1" /> Conectado
+                                <CheckCircle className="w-3 h-3 mr-1" /> {t('integrations.instagram.connected')}
                             </Badge>
                         ) : (
-                            <Badge variant="secondary">Desconectado</Badge>
+                            <Badge variant="secondary">{t('workflows.card.inactive')}</Badge>
                         )}
                     </div>
                 </CardHeader>
@@ -94,20 +125,46 @@ export default function IntegrationsPage() {
                         </div>
                     ) : (
                         <div className="text-sm text-muted-foreground">
-                            Nenhuma conta conectada. Clique abaixo para iniciar.
+                            {/* You might want to translate this explicitly too if it's dynamic */}
+                            {t('integrations.instagram.description')}
                         </div>
                     )}
                 </CardContent>
                 <CardFooter className="flex gap-2">
                     {!account || account.status !== 'CONNECTED' ? (
                         <Button onClick={handleConnect} disabled={loading}>
-                            Conectar Instagram
+                            {t('integrations.instagram.connectButton')}
                         </Button>
                     ) : (
-                        <Button variant="outline" onClick={handleRevalidate}>
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Revalidar conexão
-                        </Button>
+                        <>
+                            <Button variant="outline" onClick={handleRevalidate}>
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                {t('integrations.instagram.revalidateButton')}
+                            </Button>
+
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" disabled={disconnecting}>
+                                        <LogOut className="w-4 h-4 mr-2" />
+                                        {t('integrations.instagram.disconnectButton')}
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>{t('common.confirmDisconnectTitle')}</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            {t('common.confirmDisconnectDesc')}
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDisconnect} className="bg-destructive hover:bg-destructive/90">
+                                            {disconnecting ? t('common.disconnecting') : t('common.disconnect')}
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </>
                     )}
                 </CardFooter>
             </Card>

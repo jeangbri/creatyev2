@@ -29,7 +29,12 @@ export const translations = {
             confirmDeleteTitle: "Tem certeza?",
             confirmDeleteDesc: "Esta ação não pode ser desfeita. A automação será excluída permanentemente.",
             error: "Erro",
-            success: "Sucesso"
+            success: "Sucesso",
+            disconnect: "Desconectar",
+            disconnecting: "Desconectando...",
+            connected: "Conectado",
+            confirmDisconnectTitle: "Desconectar Instagram?",
+            confirmDisconnectDesc: "Isso removerá a conexão com o Instagram e pausará todas as automações associadas. Você poderá reconectar a qualquer momento."
         },
         dashboard: {
             title: "Visão Geral",
@@ -86,6 +91,18 @@ export const translations = {
                 unexpectedError: "Ocorreu um erro inesperado"
             },
             footer: "© 2026 Creatye. Precision Software."
+        },
+        integrations: {
+            title: "Integrações",
+            subtitle: "Gerencie suas conexões com o Instagram e Facebook.",
+            instagram: {
+                title: "Instagram",
+                description: "Conecte sua conta profissional para automações",
+                connectButton: "Conectar com Facebook",
+                revalidateButton: "Revalidar conexão",
+                disconnectButton: "Desconectar",
+                connected: "Conectado"
+            }
         }
     },
     en: {
@@ -116,7 +133,12 @@ export const translations = {
             confirmDeleteTitle: "Are you sure?",
             confirmDeleteDesc: "This action cannot be undone. The automation will be permanently deleted.",
             error: "Error",
-            success: "Success"
+            success: "Success",
+            disconnect: "Disconnect",
+            disconnecting: "Disconnecting...",
+            connected: "Connected",
+            confirmDisconnectTitle: "Disconnect Instagram?",
+            confirmDisconnectDesc: "This will remove the Instagram connection and pause all associated automations. You can reconnect at any time."
         },
         dashboard: {
             title: "Overview",
@@ -173,6 +195,18 @@ export const translations = {
                 unexpectedError: "An unexpected error occurred"
             },
             footer: "© 2026 Creatye. Precision Software."
+        },
+        integrations: {
+            title: "Integrations",
+            subtitle: "Manage your connections with Instagram and Facebook.",
+            instagram: {
+                title: "Instagram",
+                description: "Connect your professional account for automations",
+                connectButton: "Connect with Facebook",
+                revalidateButton: "Revalidate connection",
+                disconnectButton: "Disconnect",
+                connected: "Connected"
+            }
         }
     }
 };
