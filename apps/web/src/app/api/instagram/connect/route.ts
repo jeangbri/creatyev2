@@ -65,17 +65,23 @@ export async function GET(req: NextRequest) {
     const appId = process.env.IG_APP_ID!;
     const redirectUri = process.env.IG_REDIRECT_URI!;
 
-    // Correct scopes for Business via Instagram Login
+    // Facebook Login for Business (Standard for Automations)
+    // We switched to this because 'Instagram Login' tokens resulted in "Invalid OAuth access token" (code 190)
+    // when attempting to subscribe to Webhooks via graph.facebook.com.
+    // To reliably automate DMs, we must use the Facebook Login flow which grants a token valid for the FB Graph API.
+
+    // Scopes needed for Instagram Business Automations:
     const scopes = [
-        'instagram_business_basic',
-        'instagram_business_manage_messages',
-        'instagram_business_manage_comments',
-        'instagram_business_content_publish'
+        'public_profile',
+        'instagram_basic',
+        'instagram_manage_messages',
+        'instagram_manage_comments',
+        'pages_show_list',
+        'pages_manage_metadata',
+        'pages_messaging' // Required for webhook subscription on the Page
     ].join(',');
 
-    const authUrl = new URL('https://www.instagram.com/oauth/authorize');
-    authUrl.searchParams.append('enable_fb_login', '0');
-    authUrl.searchParams.append('force_authentication', '1');
+    const authUrl = new URL('https://www.facebook.com/v21.0/dialog/oauth');
     authUrl.searchParams.append('client_id', appId);
     authUrl.searchParams.append('redirect_uri', redirectUri);
     authUrl.searchParams.append('scope', scopes);
