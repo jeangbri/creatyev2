@@ -92,20 +92,37 @@ export async function GET(req: NextRequest) {
         let profilePicUrl = '';
 
         try {
-            // Try Graph API first (Business)
-            console.log(`[IG Callback] Fetching profile via Graph API for default ID: ${igUserId}`);
-            const meRes = await fetch(`https://graph.instagram.com/v21.0/me?fields=id,username,profile_picture_url,account_type&access_token=${finalAccessToken}`);
-            const meData = await meRes.json();
-            console.log('[IG Callback] /me response:', JSON.stringify(meData));
+            console.log(`[IG Callback] Fetching profile. Initial ID: ${igUserId}`);
 
-            if (meRes.ok && meData.id) {
-                igUserId = meData.id;
-                username = meData.username || '';
-                profilePicUrl = meData.profile_picture_url || '';
+            // Strategy: Try Facebook Graph API first using the token.
+            // This usually returns the Business ID (1784...) which is what we NEED for webhooks and automations.
+            // The Instagram Graph API (graph.instagram.com) often returns the IGSID (3355...) which is useless for Page subscriptions.
+
+            const fbGraphUrl = `https://graph.facebook.com/v21.0/me?fields=id,username,profile_picture_url,account_type&access_token=${finalAccessToken}`;
+            const fbRes = await fetch(fbGraphUrl);
+            const fbData = await fbRes.json();
+
+            console.log('[IG Callback] FB Graph /me response:', JSON.stringify(fbData));
+
+            if (fbRes.ok && fbData.id) {
+                igUserId = fbData.id; // PREFER THIS ID (1784...)
+                username = fbData.username || '';
+                profilePicUrl = fbData.profile_picture_url || '';
+                console.log(`[IG Callback] ✅ Resolved Business ID via FB Graph: ${igUserId}`);
             } else {
-                // If /me fails, it implies the token might be valid but for a different scope/ID, 
-                // OR it's a Basic Display token which requires 'api.instagram.com' or specific node.
-                // We'll stick with what we have if we can't get better.
+                // Fallback to IG Graph if FB Graph fails (e.g. strict Basic Display token)
+                console.warn('[IG Callback] FB Graph failed, trying IG Graph...', fbData);
+
+                const igGraphUrl = `https://graph.instagram.com/v21.0/me?fields=id,username,profile_picture_url,account_type&access_token=${finalAccessToken}`;
+                const igRes = await fetch(igGraphUrl);
+                const igData = await igRes.json();
+                console.log('[IG Callback] IG Graph /me response:', JSON.stringify(igData));
+
+                if (igRes.ok && igData.id) {
+                    igUserId = igData.id;
+                    username = igData.username || '';
+                    profilePicUrl = igData.profile_picture_url || '';
+                }
             }
 
         } catch (e) {
