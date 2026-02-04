@@ -8,7 +8,8 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
-import { Lock, Mail, ArrowRight, UserPlus } from 'lucide-react'
+import { Lock, Mail, UserPlus } from 'lucide-react'
+import { useLanguage } from '@/contexts/language-context'
 
 export default function RegisterPage() {
     const [email, setEmail] = useState('')
@@ -16,25 +17,26 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(false)
     const router = useRouter()
     const supabase = createClient()
+    const { t } = useLanguage()
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
 
         try {
-            const { data, error } = await supabase.auth.signUp({
+            const { error } = await supabase.auth.signUp({
                 email,
                 password,
             })
 
             if (error) {
-                toast.error('Erro ao registrar: ' + error.message)
+                toast.error(`${t('auth.register.error')}: ${error.message}`)
             } else {
-                toast.success('Conta criada! Verifique seu email ou faça login.')
+                toast.success(t('auth.register.success'))
                 router.push('/entrar')
             }
         } catch (err) {
-            toast.error('Ocorreu um erro inesperado')
+            toast.error(t('auth.register.unexpectedError'))
         } finally {
             setLoading(false)
         }
@@ -57,10 +59,10 @@ export default function RegisterPage() {
 
                 <CardHeader className="space-y-2 text-center pt-8">
                     <CardTitle className="text-2xl font-light tracking-tight text-white">
-                        Comece com o <span className="font-bold">Creatye</span>
+                        {t('auth.register.welcome')} <span className="font-bold">Creatye</span>
                     </CardTitle>
                     <CardDescription className="text-slate-400 text-xs uppercase tracking-[0.3em] font-semibold">
-                        Crie sua conta de automação
+                        {t('auth.register.subtitle')}
                     </CardDescription>
                 </CardHeader>
 
@@ -68,7 +70,7 @@ export default function RegisterPage() {
                     <form onSubmit={handleRegister} className="space-y-6">
                         <div className="space-y-2.5 group/input">
                             <label htmlFor="email" className="text-[11px] uppercase tracking-widest text-slate-400 font-bold ml-1 transition-colors group-focus-within/input:text-cyan-400">
-                                Email Profissional
+                                {t('auth.register.emailLabel')}
                             </label>
                             <div className="relative">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-500 transition-colors group-focus-within/input:text-cyan-400" />
@@ -86,7 +88,7 @@ export default function RegisterPage() {
 
                         <div className="space-y-2.5 group/input">
                             <label htmlFor="password" className="text-[11px] uppercase tracking-widest text-slate-400 font-bold ml-1 transition-colors group-focus-within/input:text-cyan-400">
-                                Senha de Acesso
+                                {t('auth.register.passwordLabel')}
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-500 transition-colors group-focus-within/input:text-cyan-400" />
@@ -110,11 +112,11 @@ export default function RegisterPage() {
                             {loading ? (
                                 <span className="flex items-center gap-3">
                                     <div className="w-4 h-4 border-2 border-slate-950/20 border-t-slate-950 rounded-full animate-spin" />
-                                    Criando...
+                                    {t('auth.register.loadingButton')}
                                 </span>
                             ) : (
                                 <span className="flex items-center justify-center gap-2">
-                                    Criar Minha Conta
+                                    {t('auth.register.submitButton')}
                                     <UserPlus className="w-4 h-4 transition-transform group-hover:scale-110" />
                                 </span>
                             )}
@@ -127,16 +129,16 @@ export default function RegisterPage() {
                         <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                     </div>
                     <p className="text-[11px] text-slate-500 tracking-wide font-medium">
-                        Já possui uma conta?
+                        {t('auth.register.alreadyAccount')}
                         <Link href="/entrar" className="text-white hover:text-cyan-400 ml-2 transition-colors font-bold uppercase tracking-widest border-b border-white/10 pb-0.5">
-                            Fazer Login
+                            {t('auth.register.loginLink')}
                         </Link>
                     </p>
                 </CardFooter>
             </Card>
 
             <p className="text-[10px] text-center text-slate-600 uppercase tracking-[0.5em] font-bold opacity-60">
-                © 2026 Creatye. Precision Software.
+                {t('auth.footer')}
             </p>
         </div>
     )

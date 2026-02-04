@@ -56,6 +56,36 @@ export const translations = {
                 deletedSuccess: "Automação excluída",
                 deleteError: "Erro ao excluir automação"
             }
+        },
+        auth: {
+            login: {
+                welcome: "Bem-vindo ao",
+                subtitle: "Inteligência em Automação",
+                emailLabel: "Email",
+                passwordLabel: "Senha",
+                forgotPassword: "Esqueceu?",
+                submitButton: "Acessar Conta",
+                loadingButton: "Entrando...",
+                noAccount: "Não possui acesso?",
+                requestInvite: "Solicitar Convite",
+                success: "Login realizado com sucesso!",
+                error: "Erro ao entrar",
+                unexpectedError: "Ocorreu um erro inesperado"
+            },
+            register: {
+                welcome: "Comece com o",
+                subtitle: "Crie sua conta de automação",
+                emailLabel: "Email Profissional",
+                passwordLabel: "Senha de Acesso",
+                submitButton: "Criar Minha Conta",
+                loadingButton: "Criando...",
+                alreadyAccount: "Já possui uma conta?",
+                loginLink: "Fazer Login",
+                success: "Conta criada! Verifique seu email ou faça login.",
+                error: "Erro ao registrar",
+                unexpectedError: "Ocorreu um erro inesperado"
+            },
+            footer: "© 2026 Creatye. Precision Software."
         }
     },
     en: {
@@ -113,6 +143,36 @@ export const translations = {
                 deletedSuccess: "Automation deleted",
                 deleteError: "Error deleting automation"
             }
+        },
+        auth: {
+            login: {
+                welcome: "Welcome to",
+                subtitle: "Automation Intelligence",
+                emailLabel: "Email",
+                passwordLabel: "Password",
+                forgotPassword: "Forgot?",
+                submitButton: "Sign In",
+                loadingButton: "Signing in...",
+                noAccount: "Don't have access?",
+                requestInvite: "Request Invite",
+                success: "Login successful!",
+                error: "Error signing in",
+                unexpectedError: "An unexpected error occurred"
+            },
+            register: {
+                welcome: "Get started with",
+                subtitle: "Create your automation account",
+                emailLabel: "Professional Email",
+                passwordLabel: "Access Password",
+                submitButton: "Create My Account",
+                loadingButton: "Creating...",
+                alreadyAccount: "Already have an account?",
+                loginLink: "Sign In",
+                success: "Account created! Check your email or sign in.",
+                error: "Error registering",
+                unexpectedError: "An unexpected error occurred"
+            },
+            footer: "© 2026 Creatye. Precision Software."
         }
     }
 };
