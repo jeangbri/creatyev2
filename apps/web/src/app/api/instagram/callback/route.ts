@@ -66,64 +66,57 @@ export async function GET(req: NextRequest) {
         console.log('[IG Callback] Token exchanged successfully.');
 
         // Response: { access_token, user_id }
+        console.log('[IG Callback] Token Data:', JSON.stringify(tokenData));
 
         // Exchange for long-lived
-        const longLivedRes = await fetch(`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${tokenData.access_token}`);
-        const longLivedData = await longLivedRes.json();
+        let finalAccessToken = tokenData.access_token;
+        let expiresAt = new Date(Date.now() + 3600 * 1000);
 
-        console.log('[IG Callback] Long-lived token fetched.');
+        try {
+            const longLivedRes = await fetch(`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${tokenData.access_token}`);
+            const longLivedData = await longLivedRes.json();
+            console.log('[IG Callback] Long-lived response:', JSON.stringify(longLivedData));
 
-        const finalAccessToken = longLivedData.access_token || tokenData.access_token;
-        const expiresSeconds = longLivedData.expires_in || 3600;
-        const expiresAt = new Date(Date.now() + expiresSeconds * 1000);
+            if (longLivedData.access_token) {
+                finalAccessToken = longLivedData.access_token;
+                const expiresSeconds = longLivedData.expires_in || 5184000; // 60 days
+                expiresAt = new Date(Date.now() + expiresSeconds * 1000);
+            }
+        } catch (e) {
+            console.error('[IG Callback] Failed to exchange long-lived token', e);
+        }
 
-        // Get User Profile (to get username and profile pic)
-        // endpoint: https://graph.instagram.com/v11.0/me?fields=id,username,profile_picture_url&access_token=...
-        // Get User Profile (to get username and profile pic)
-        // endpoint: https://graph.instagram.com/v21.0/me?fields=id,username,profile_picture_url&access_token=...
-        let igUserId = tokenData.user_id;
+        // Get User Profile
+        let igUserId = tokenData.user_id; // Default from Basic connection
         let username = '';
         let profilePicUrl = '';
 
         try {
-            console.log(`[IG Callback] Fetching profile for ID: ${igUserId}`);
-
-            // Try /me first
+            // Try Graph API first (Business)
+            console.log(`[IG Callback] Fetching profile via Graph API for default ID: ${igUserId}`);
             const meRes = await fetch(`https://graph.instagram.com/v21.0/me?fields=id,username,profile_picture_url,account_type&access_token=${finalAccessToken}`);
             const meData = await meRes.json();
+            console.log('[IG Callback] /me response:', JSON.stringify(meData));
 
-            if (meRes.ok) {
-                // Use the ID from /me if available, as it's the most reliable Graph ID
-                if (meData.id) igUserId = meData.id;
+            if (meRes.ok && meData.id) {
+                igUserId = meData.id;
                 username = meData.username || '';
                 profilePicUrl = meData.profile_picture_url || '';
-                console.log('[IG Callback] /me success:', meData);
             } else {
-                console.warn('[IG Callback] /me failed:', meData);
-
-                // Fallback: Try fetching by user_id from token
-                if (tokenData.user_id) {
-                    const userRes = await fetch(`https://graph.instagram.com/v21.0/${tokenData.user_id}?fields=id,username,profile_picture_url&access_token=${finalAccessToken}`);
-                    const userData = await userRes.json();
-                    if (userRes.ok) {
-                        username = userData.username || '';
-                        profilePicUrl = userData.profile_picture_url || '';
-                        console.log('[IG Callback] ID fetch success:', userData);
-                    } else {
-                        console.error('[IG Callback] ID fetch failed:', userData);
-                    }
-                }
+                // If /me fails, it implies the token might be valid but for a different scope/ID, 
+                // OR it's a Basic Display token which requires 'api.instagram.com' or specific node.
+                // We'll stick with what we have if we can't get better.
             }
+
         } catch (e) {
             console.error('[IG Callback] Profile fetch error:', e);
         }
 
-        // Final fallback for username if still missing
         if (!username) {
-            username = `Instagram User ${igUserId}`; // Better than "Linked Account"? Maybe.
+            username = `Instagram User ${igUserId}`;
         }
 
-        console.log(`[IG Callback] Saving account. Workspace: ${workspaceId}, IG User ID: ${igUserId}, Username: ${username}`);
+        console.log(`[IG Callback] Saving account. Workspace: ${workspaceId}, IG User ID: ${igUserId}`);
 
         // Store in DB
         const result = await prisma.instagramAccount.upsert({
@@ -154,37 +147,50 @@ export async function GET(req: NextRequest) {
 
         console.log('[IG Callback] Account saved successfully:', result.id);
 
-        // --- NEW: Subscribe to Webhooks (Force Subscription) ---
+        // --- NEW: Subscribe to Webhooks (Robost Attempt) ---
+        // We attempt both graph.facebook.com (standard) and graph.instagram.com (if basic)
+        // But automations strictly require Business accounts (Graph API).
+
+        const subFields = "messages,messaging_postbacks,message_reactions,messaging_optins";
+
+        // Attempt 1: subscribe via graph.facebook.com on the IG User ID
+        // (This often fails with IG User Token, but required by some docs for "Instagram App" subscription)
         try {
-            console.log(`[IG Callback] Attempting to subscribe ${igUserId} to webhooks...`);
+            const fbSubUrl = `https://graph.facebook.com/v21.0/${igUserId}/subscribed_apps?subscribed_fields=${subFields}&access_token=${finalAccessToken}`;
+            console.log(`[IG Callback] Subscribing via Facebook Graph: ${fbSubUrl}`);
 
-            // Note: User instructions detailed POST to graph.facebook.com for subscribed_apps.
-            // We use the access token we just got (User Token).
-            // We use igUserId as the page_id equivalent.
-            const subscribeUrl = `https://graph.facebook.com/v21.0/${igUserId}/subscribed_apps?subscribed_fields=messages,messaging_postbacks,message_reactions,messaging_optins&access_token=${finalAccessToken}`;
-
-            const subRes = await fetch(subscribeUrl, { method: 'POST' });
+            const subRes = await fetch(fbSubUrl, { method: 'POST' });
             const subData = await subRes.json();
 
-            if (!subRes.ok) {
-                // Check if error is "already subscribed" (though API usually returns success=true if already subscribed)
-                // If it's a permission error, we log it.
-                console.error(`[IG Callback] Webhook subscription WARNING for ${igUserId}:`, subData);
+            if (subData.success) {
+                console.log(`[IG Callback] LOG: page_id=${igUserId}, integration_id=${result.id}, status=subscribed_ok (FB Graph)`);
             } else {
-                console.log(`[IG Callback] Webhook subscribed successfully for ${igUserId}:`, subData);
-                // Log per requirements
-                console.log(`[IG Callback] LOG: page_id=${igUserId}, integration_id=${result.id}, status=subscribed_ok`);
+                console.warn(`[IG Callback] Subscription failed on FB Graph:`, subData);
+
+                // Attempt 2: subscribe via graph.instagram.com
+                // Some Instagram Business tokens work here.
+                const igSubUrl = `https://graph.instagram.com/v21.0/${igUserId}/subscribed_apps?subscribed_fields=${subFields}&access_token=${finalAccessToken}`;
+                console.log(`[IG Callback] Subscribing via Instagram Graph: ${igSubUrl}`);
+
+                const subRes2 = await fetch(igSubUrl, { method: 'POST' });
+                const subData2 = await subRes2.json();
+
+                if (subData2.success) {
+                    console.log(`[IG Callback] LOG: page_id=${igUserId}, integration_id=${result.id}, status=subscribed_ok (IG Graph)`);
+                } else {
+                    console.error(`[IG Callback] Subscription failed on IG Graph too:`, subData2);
+                }
             }
         } catch (subErr) {
-            console.error(`[IG Callback] Webhook subscription failed logic for ${igUserId}:`, subErr);
+            console.error(`[IG Callback] Webhook subscription logic crashed:`, subErr);
         }
         // -------------------------------------------------------
 
         return NextResponse.redirect(new URL('/settings/integracoes?success=true', req.url));
 
-    } catch (err) {
+    } catch (err: any) {
         console.error('[IG Callback] CRITICAL ERROR:', err);
-        return NextResponse.redirect(new URL('/settings/integracoes?error=server_error', req.url));
+        return NextResponse.redirect(new URL(`/settings/integracoes?error=server_error&details=${encodeURIComponent(err.message)}`, req.url));
     }
 }
 
