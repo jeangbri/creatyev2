@@ -49,7 +49,10 @@ export async function handleWebhookJob(eventId: string, payloadOverride?: any) {
 
 export async function processInstagramEvent(body: any, signature: string | null) {
     // Legacy helper - redirects to job logic
-    // Usually called directly in some older versions.
+    // We treat this as an "inline" execution without a persistent Event ID for now, 
+    // or we could create one. For strict compliance with the dual-route possibility:
+    console.log("[IG Service] Processing event via processInstagramEvent proxy...");
+    await handleWebhookJob("inline-proxy", body);
 }
 
 async function upsertContact(account: any, instagramId: string) {

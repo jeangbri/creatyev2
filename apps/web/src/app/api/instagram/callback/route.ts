@@ -154,6 +154,32 @@ export async function GET(req: NextRequest) {
 
         console.log('[IG Callback] Account saved successfully:', result.id);
 
+        // --- NEW: Subscribe to Webhooks (Force Subscription) ---
+        try {
+            console.log(`[IG Callback] Attempting to subscribe ${igUserId} to webhooks...`);
+
+            // Note: User instructions detailed POST to graph.facebook.com for subscribed_apps.
+            // We use the access token we just got (User Token).
+            // We use igUserId as the page_id equivalent.
+            const subscribeUrl = `https://graph.facebook.com/v21.0/${igUserId}/subscribed_apps?subscribed_fields=messages,messaging_postbacks,message_reactions,messaging_optins&access_token=${finalAccessToken}`;
+
+            const subRes = await fetch(subscribeUrl, { method: 'POST' });
+            const subData = await subRes.json();
+
+            if (!subRes.ok) {
+                // Check if error is "already subscribed" (though API usually returns success=true if already subscribed)
+                // If it's a permission error, we log it.
+                console.error(`[IG Callback] Webhook subscription WARNING for ${igUserId}:`, subData);
+            } else {
+                console.log(`[IG Callback] Webhook subscribed successfully for ${igUserId}:`, subData);
+                // Log per requirements
+                console.log(`[IG Callback] LOG: page_id=${igUserId}, integration_id=${result.id}, status=subscribed_ok`);
+            }
+        } catch (subErr) {
+            console.error(`[IG Callback] Webhook subscription failed logic for ${igUserId}:`, subErr);
+        }
+        // -------------------------------------------------------
+
         return NextResponse.redirect(new URL('/settings/integracoes?success=true', req.url));
 
     } catch (err) {
