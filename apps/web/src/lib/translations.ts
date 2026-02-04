@@ -98,7 +98,7 @@ export const translations = {
             instagram: {
                 title: "Instagram",
                 description: "Conecte sua conta profissional para automações",
-                connectButton: "Conectar com Facebook",
+                connectButton: "Conectar com Instagram",
                 revalidateButton: "Revalidar conexão",
                 disconnectButton: "Desconectar",
                 connected: "Conectado"
@@ -202,7 +202,7 @@ export const translations = {
             instagram: {
                 title: "Instagram",
                 description: "Connect your professional account for automations",
-                connectButton: "Connect with Facebook",
+                connectButton: "Connect with Instagram",
                 revalidateButton: "Revalidate connection",
                 disconnectButton: "Disconnect",
                 connected: "Connected"
