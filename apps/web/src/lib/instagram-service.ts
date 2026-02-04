@@ -98,32 +98,44 @@ async function handleDmEvent(accountId: string, event: any, eventId?: string) {
             try {
                 const token = decrypt(acc.accessTokenEncrypted).trim();
 
-                // Check if this token can access the recipient node (proving ownership/access)
-                // We use the recipientId (Business ID) from webhook.
-                const checkUrl = `${IG_API_URL}/${recipientId}?fields=id,username&access_token=${token}`;
-                console.log(`[IG Service] Checking access for ${acc.username} against ${recipientId}...`);
+                // Strategy 1: Check via Instagram Graph API
+                let checkUrl = `https://graph.instagram.com/v21.0/${recipientId}?fields=id,username&access_token=${token}`;
+                let res = await fetch(checkUrl);
+                let data = await res.json();
 
-                const res = await fetch(checkUrl);
-
-                if (res.ok) {
-                    const data = await res.json();
-                    console.log(`[IG Service] ✅ Match found! Token from ${acc.username} (IGSID: ${acc.igUserId}) can access Business ID ${recipientId}`);
-
-                    // Update the DB to store the correct Business ID instead of IGSID
-                    foundAccount = await prisma.instagramAccount.update({
-                        where: { id: acc.id },
-                        data: {
-                            igUserId: recipientId, // Critical Fix: Store the Business ID
-                            username: data.username || acc.username
-                        }
-                    });
-                    break;
-                } else {
-                    // Debug logs
-                    const errData = await res.json().catch(() => ({}));
-                    console.log(`[IG Service] Token check failed for ${acc.username} on ${recipientId}:`, JSON.stringify(errData));
+                if (!res.ok) {
+                    // Strategy 2: Check via Facebook Graph API (in case ID is only valid there)
+                    checkUrl = `https://graph.facebook.com/v21.0/${recipientId}?fields=id,username&access_token=${token}`;
+                    res = await fetch(checkUrl);
+                    data = await res.json();
                 }
-            } catch (ignore) { console.error("Token check error", ignore); }
+
+                if (res.ok && data.username) {
+                    // We found the username associated with this mysterious ID using this token.
+                    // Does it match the account's localized username?
+                    // Or does it imply this token HAS access to this ID?
+
+                    // IF the token successfully fetched the ID, it implies "Access".
+                    // BUT we should verify if it's the SAME account to be safe.
+                    // Compare usernames (case insensitive)
+                    if (data.username.toLowerCase() === acc.username.toLowerCase()) {
+                        console.log(`[IG Service] ✅ Match found! Token for ${acc.username} resolved ${recipientId}. Updating DB...`);
+
+                        foundAccount = await prisma.instagramAccount.update({
+                            where: { id: acc.id },
+                            data: {
+                                igUserId: recipientId, // Update to the Business ID
+                                username: data.username // Sync username
+                            }
+                        });
+                        break;
+                    } else {
+                        console.log(`[IG Service] ⚠️ Token for ${acc.username} can see ${recipientId} (${data.username}), but usernames mismatch. Ignoring.`);
+                    }
+                }
+            } catch (ignore) {
+                console.error("Error in loop", ignore);
+            }
         }
 
         if (foundAccount) {
