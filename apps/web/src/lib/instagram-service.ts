@@ -256,46 +256,64 @@ async function handleDmEvent(accountId: string, event: any, eventId?: string) {
 
         let foundAccount = null;
 
-        for (const acc of allAccounts) {
-            try {
-                const token = decrypt(acc.accessTokenEncrypted);
-                // Try to fetch the recipientId node using this token
-                // We try both endpoints just in case, but usually graph.instagram.com for IG Login tokens
-                const checkUrl = `https://graph.instagram.com/v21.0/${recipientId}?fields=id,username&access_token=${token}`;
+        if (!foundAccount) {
+            console.warn(`[IG Service] ⚠️ Primary ID lookup failed for ${recipientId}. Trying deep resolution...`);
 
-                const res = await fetch(checkUrl);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.username === acc.username) {
-                        console.log(`[IG Service] ID Mismatch Resolved! stored=${acc.igUserId}, incoming=${recipientId}. Updating DB...`);
+            for (const acc of allAccounts) {
+                try {
+                    const token = decrypt(acc.accessTokenEncrypted).trim();
 
-                        // Update DB with the correct "Webhook-compatible" ID
+                    // Strategy 1: Check if the token can access the recipient node
+                    // This verifies if the token owns/controls this ID
+                    const checkUrl = `${IG_API_URL}/${recipientId}?fields=id,username&access_token=${token}`;
+                    let res = await fetch(checkUrl);
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        // Verify username matches stored account to be sure (or update username if changed)
+                        console.log(`[IG Service] ✅ Match found via direct ID query. Token from ${acc.username} owns ${recipientId}`);
+
                         foundAccount = await prisma.instagramAccount.update({
                             where: { id: acc.id },
-                            data: { igUserId: recipientId }
-                        });
-
-                        // Re-fetch with workspace
-                        foundAccount = await prisma.instagramAccount.findUnique({
-                            where: { id: acc.id },
-                            include: { workspace: true }
+                            data: {
+                                igUserId: recipientId,
+                                username: data.username || acc.username // Update username if available
+                            }
                         });
                         break;
                     }
-                }
-            } catch (ignore) { }
+
+                    // Strategy 2: Check /me and see if IT matches recipientId
+                    // Sometimes /me returns the ID that matches webhook, even if our DB has a different one
+                    const meUrl = `${IG_API_URL}/me?fields=id,username&access_token=${token}`;
+                    res = await fetch(meUrl);
+                    if (res.ok) {
+                        const meData = await res.json();
+                        if (meData.id === recipientId) {
+                            console.log(`[IG Service] ✅ Match found via /me query. Token from ${acc.username} is ${recipientId}`);
+                            foundAccount = await prisma.instagramAccount.update({
+                                where: { id: acc.id },
+                                data: {
+                                    igUserId: recipientId,
+                                    username: meData.username || acc.username
+                                }
+                            });
+                            break;
+                        }
+                    }
+
+                } catch (ignore) { }
+            }
         }
 
-        if (!foundAccount) {
-            console.error(`[IG Service] Failed to resolve account for recipientId: ${recipientId}`);
-            // DEBUG:
-            console.log("ALL AVAILABLE ACCOUNTS (Failed resolution):", JSON.stringify(allAccounts.map(a => ({ id: a.id, igUserId: a.igUserId, username: a.username }))));
-            return;
+        if (foundAccount) {
+            // Re-fetch with workspace
+            // @ts-ignore
+            account = await prisma.instagramAccount.findUnique({
+                where: { id: foundAccount.id },
+                include: { workspace: true }
+            });
         }
-
-        // Use the resolved account
-        // @ts-ignore
-        account = foundAccount;
     }
 
     if (!account) {

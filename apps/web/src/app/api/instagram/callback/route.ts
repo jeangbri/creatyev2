@@ -79,18 +79,51 @@ export async function GET(req: NextRequest) {
 
         // Get User Profile (to get username and profile pic)
         // endpoint: https://graph.instagram.com/v11.0/me?fields=id,username,profile_picture_url&access_token=...
-        const meRes = await fetch(`https://graph.instagram.com/v21.0/me?fields=id,username,profile_picture_url&access_token=${finalAccessToken}`);
-        const meData = await meRes.json();
+        // Get User Profile (to get username and profile pic)
+        // endpoint: https://graph.instagram.com/v21.0/me?fields=id,username,profile_picture_url&access_token=...
+        let igUserId = tokenData.user_id;
+        let username = '';
+        let profilePicUrl = '';
 
-        console.log('[IG Callback] Me Data fetched:', meData);
+        try {
+            console.log(`[IG Callback] Fetching profile for ID: ${igUserId}`);
 
-        if (!meRes.ok) {
-            console.error('[IG Callback] Me Error', meData);
+            // Try /me first
+            const meRes = await fetch(`https://graph.instagram.com/v21.0/me?fields=id,username,profile_picture_url,account_type&access_token=${finalAccessToken}`);
+            const meData = await meRes.json();
+
+            if (meRes.ok) {
+                // Use the ID from /me if available, as it's the most reliable Graph ID
+                if (meData.id) igUserId = meData.id;
+                username = meData.username || '';
+                profilePicUrl = meData.profile_picture_url || '';
+                console.log('[IG Callback] /me success:', meData);
+            } else {
+                console.warn('[IG Callback] /me failed:', meData);
+
+                // Fallback: Try fetching by user_id from token
+                if (tokenData.user_id) {
+                    const userRes = await fetch(`https://graph.instagram.com/v21.0/${tokenData.user_id}?fields=id,username,profile_picture_url&access_token=${finalAccessToken}`);
+                    const userData = await userRes.json();
+                    if (userRes.ok) {
+                        username = userData.username || '';
+                        profilePicUrl = userData.profile_picture_url || '';
+                        console.log('[IG Callback] ID fetch success:', userData);
+                    } else {
+                        console.error('[IG Callback] ID fetch failed:', userData);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('[IG Callback] Profile fetch error:', e);
         }
 
-        const igUserId = meData.id || tokenData.user_id;
+        // Final fallback for username if still missing
+        if (!username) {
+            username = `Instagram User ${igUserId}`; // Better than "Linked Account"? Maybe.
+        }
 
-        console.log(`[IG Callback] Saving account. Workspace: ${workspaceId}, IG User ID: ${igUserId}`);
+        console.log(`[IG Callback] Saving account. Workspace: ${workspaceId}, IG User ID: ${igUserId}, Username: ${username}`);
 
         // Store in DB
         const result = await prisma.instagramAccount.upsert({
@@ -101,8 +134,8 @@ export async function GET(req: NextRequest) {
                 }
             },
             update: {
-                username: meData.username || 'Linked Account',
-                profilePicUrl: meData.profile_picture_url || '',
+                username: username,
+                profilePicUrl: profilePicUrl,
                 status: 'CONNECTED',
                 accessTokenEncrypted: encrypt(finalAccessToken),
                 tokenExpiresAt: expiresAt,
@@ -111,8 +144,8 @@ export async function GET(req: NextRequest) {
             create: {
                 workspaceId,
                 igUserId: String(igUserId),
-                username: meData.username || 'Linked Account',
-                profilePicUrl: meData.profile_picture_url || '',
+                username: username,
+                profilePicUrl: profilePicUrl,
                 status: 'CONNECTED',
                 accessTokenEncrypted: encrypt(finalAccessToken),
                 tokenExpiresAt: expiresAt
