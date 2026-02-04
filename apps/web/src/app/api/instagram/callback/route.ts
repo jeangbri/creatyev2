@@ -164,39 +164,52 @@ export async function GET(req: NextRequest) {
 
         console.log('[IG Callback] Account saved successfully:', result.id);
 
-        // --- NEW: Subscribe to Webhooks (Robost Attempt) ---
-        // We attempt both graph.facebook.com (standard) and graph.instagram.com (if basic)
-        // But automations strictly require Business accounts (Graph API).
+        // --- NEW: Subscribe to Webhooks (Robost Strategy v3) ---
+        // Problem: We have an IGSID (3355...) but Webhooks need a Business ID (1784...).
+        // Strategy: Use the 'me' context on Facebook Graph. The IG User Token for Business *should* map 'me' to the Business Account on FB Graph.
 
-        const subFields = "messages,messaging_postbacks,message_reactions,messaging_optins";
-
-        // Attempt 1: subscribe via graph.facebook.com on the IG User ID
-        // (This often fails with IG User Token, but required by some docs for "Instagram App" subscription)
         try {
-            const fbSubUrl = `https://graph.facebook.com/v21.0/${igUserId}/subscribed_apps?subscribed_fields=${subFields}&access_token=${finalAccessToken}`;
-            console.log(`[IG Callback] Subscribing via Facebook Graph: ${fbSubUrl}`);
+            console.log(`[IG Callback] Attempting to subscribe 'me' directly via FB Graph...`);
 
-            const subRes = await fetch(fbSubUrl, { method: 'POST' });
+            const subFields = "messages,messaging_postbacks,message_reactions,messaging_optins";
+            const meSubUrl = `https://graph.facebook.com/v21.0/me/subscribed_apps?subscribed_fields=${subFields}&access_token=${finalAccessToken}`;
+
+            const subRes = await fetch(meSubUrl, { method: 'POST' });
             const subData = await subRes.json();
 
             if (subData.success) {
-                console.log(`[IG Callback] LOG: page_id=${igUserId}, integration_id=${result.id}, status=subscribed_ok (FB Graph)`);
-            } else {
-                console.warn(`[IG Callback] Subscription failed on FB Graph:`, subData);
+                console.log(`[IG Callback] ✅ Webhook subscribed successfully via 'me' context!`);
+                console.log(`[IG Callback] LOG: page_id=me, integration_id=${result.id}, status=subscribed_ok`);
 
-                // Attempt 2: subscribe via graph.instagram.com
-                // Some Instagram Business tokens work here.
-                const igSubUrl = `https://graph.instagram.com/v21.0/${igUserId}/subscribed_apps?subscribed_fields=${subFields}&access_token=${finalAccessToken}`;
-                console.log(`[IG Callback] Subscribing via Instagram Graph: ${igSubUrl}`);
+                // CRITICAL: We successfully subscribed the *Business Account*. 
+                // But our DB might still have the IGSID (3355...).
+                // We MUST try to get the real ID (1784...) from this 'me' context to fix the DB.
+                try {
+                    const meCheck = await fetch(`https://graph.facebook.com/v21.0/me?fields=id,username&access_token=${finalAccessToken}`);
+                    const meCheckData = await meCheck.json();
+                    if (meCheck.ok && meCheckData.id && meCheckData.id !== igUserId) {
+                        console.log(`[IG Callback] 🔄 FOUND REAL BUSINESS ID: ${meCheckData.id}. Updating DB to replace IGSID ${igUserId}...`);
 
-                const subRes2 = await fetch(igSubUrl, { method: 'POST' });
-                const subData2 = await subRes2.json();
-
-                if (subData2.success) {
-                    console.log(`[IG Callback] LOG: page_id=${igUserId}, integration_id=${result.id}, status=subscribed_ok (IG Graph)`);
-                } else {
-                    console.error(`[IG Callback] Subscription failed on IG Graph too:`, subData2);
+                        // Update the existing row (result.id).
+                        await prisma.instagramAccount.update({
+                            where: { id: result.id },
+                            data: {
+                                igUserId: meCheckData.id,
+                                username: meCheckData.username || username
+                            }
+                        });
+                        console.log(`[IG Callback] ✅ DB Updated with Business ID: ${meCheckData.id}`);
+                    }
+                } catch (fixErr) {
+                    console.error('[IG Callback] Failed to swap ID after subscription:', fixErr);
                 }
+
+            } else {
+                console.warn(`[IG Callback] 'me' Subscription failed:`, subData);
+
+                // Fallback: Try the specific ID we have (even if it's likely IGSID and will fail, harmless to try)
+                const fbSubUrl = `https://graph.facebook.com/v21.0/${igUserId}/subscribed_apps?subscribed_fields=${subFields}&access_token=${finalAccessToken}`;
+                await fetch(fbSubUrl, { method: 'POST' });
             }
         } catch (subErr) {
             console.error(`[IG Callback] Webhook subscription logic crashed:`, subErr);
