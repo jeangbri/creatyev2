@@ -61,7 +61,165 @@ export async function processInstagramEvent(body: any, signature: string | null)
 
 // ... upsertContact ...
 
-// ... handleCommentEvent ...
+
+// --- Helper: Fetch Public Profile ---
+async function fetchUserProfile(accessToken: string, userId: string) {
+    try {
+        // Try getting public info (name, username, pic)
+        const url = `https://graph.facebook.com/v21.0/${userId}?fields=id,name,username,profile_picture_url&access_token=${accessToken}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        return data.error ? null : data;
+    } catch (e) {
+        console.error("Error fetching user profile", e);
+        return null;
+    }
+}
+
+// --- Helper: Upsert Contact ---
+async function upsertContact(account: any, instagramId: string, usernameFallback?: string) {
+    // 1. Check if exists
+    // Note: If prisma.contact doesn't exist in schema, this will fail. ensure schema is updated.
+    // Use fallback to InstagramFollower or similar if needed, but for now assuming Contact model intends to exist.
+
+    try {
+        const existing = await prisma.contact.findUnique({
+            where: {
+                workspaceId_instagramId: {
+                    workspaceId: account.workspaceId,
+                    instagramId: instagramId
+                }
+            }
+        });
+
+        if (existing) {
+            return await prisma.contact.update({
+                where: { id: existing.id },
+                data: { lastInteraction: new Date() }
+            });
+        }
+
+        // 2. Fetch Profile Details for New Contact
+        let fullName = usernameFallback || `User ${instagramId}`;
+        let username = usernameFallback || null;
+        let profilePicUrl = null;
+
+        if (account.accessTokenEncrypted) {
+            const token = decrypt(account.accessTokenEncrypted).trim();
+            const profile = await fetchUserProfile(token, instagramId);
+
+            if (profile) {
+                fullName = profile.name || profile.username || fullName;
+                username = profile.username || username; // profile.username matches schema field
+                profilePicUrl = profile.profile_picture_url || null;
+            }
+        }
+
+        // 3. Create
+        return await prisma.contact.create({
+            data: {
+                workspaceId: account.workspaceId,
+                instagramId: instagramId,
+                fullName: fullName,
+                username: username,
+                profilePicUrl: profilePicUrl,
+                tags: [],
+                lastInteraction: new Date()
+            }
+        });
+    } catch (e) {
+        console.error("Error upserting contact", e);
+        // Fallback or ignore
+    }
+}
+
+
+// --- Helper: Handle Comment Event ---
+async function handleCommentEvent(accountId: string, change: any, eventId?: string) {
+    console.log(`[IG Service] Handling Comment Event for Account ${accountId}`);
+
+    const value = change.value;
+    // Extract Comment Data
+    const mediaId = value.media.id;
+    const text = value.text;
+    const commentId = value.id;
+    const fromId = value.from.id;
+    const fromUsername = value.from.username;
+
+    // Ignore self-comments
+    if (fromId === accountId) return;
+
+    // 1. Find Account
+    const account = await prisma.instagramAccount.findFirst({
+        where: { igUserId: accountId },
+        include: { workspace: true }
+    });
+
+    if (!account) {
+        console.warn(`[IG Service] Account not found for comment. Account ID: ${accountId}`);
+        return;
+    }
+
+    // 2. Upsert Contact
+    await upsertContact(account, fromId, fromUsername);
+
+    // 3. Find Matching Workflows
+    const workflows = await prisma.workflow.findMany({
+        where: {
+            workspaceId: account.workspaceId,
+            isActive: true,
+            status: "PUBLISHED",
+            triggers: {
+                some: {
+                    type: "FEED_COMMENT"
+                }
+            }
+        },
+        include: {
+            triggers: true,
+            actions: true
+        }
+    });
+
+    console.log(`[IG Service] Found ${workflows.length} workflows for FEED_COMMENT`);
+
+    // 4. Check Matches
+    for (const workflow of workflows) {
+        const trigger = workflow.triggers.find(t => t.type === 'FEED_COMMENT');
+        if (!trigger) continue;
+
+        const config = trigger.configJson as any;
+
+        // Check Post ID (if specific)
+        if (config.targetMediaId && config.targetMediaId !== mediaId) {
+            console.log(`[IG Service] Workflow ${workflow.title} skipped. Target Media Mismatch.`);
+            continue;
+        }
+
+        // Check Keywords
+        const keywords = config.keywords || [];
+        const matchMode = config.matchMode || 'contains';
+        let matched = false;
+
+        if (keywords.length === 0) {
+            matched = true;
+        } else {
+            const lowerText = text.toLowerCase();
+            if (matchMode === 'exact') {
+                matched = keywords.some((k: string) => k.toLowerCase().trim() === lowerText);
+            } else {
+                matched = keywords.some((k: string) => lowerText.includes(k.toLowerCase().trim()));
+            }
+        }
+
+        if (matched) {
+            console.log(`[IG Service] Workflow ${workflow.title} MATCHED! Executing...`);
+            // Execute
+            await runWorkflowActions(workflow, account, fromId, eventId || 'inline', commentId);
+        }
+    }
+}
+
 
 
 async function handleDmEvent(accountId: string, event: any, eventId?: string) {
