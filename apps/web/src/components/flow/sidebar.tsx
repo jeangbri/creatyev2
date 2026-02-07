@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Clock, Tag, HelpCircle, GripVertical, Play, AtSign, MessageCircle, Sparkles, Globe } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 export function Sidebar() {
+    const { t } = useLanguage();
+
     const onDragStart = (event: React.DragEvent, nodeType: string) => {
         event.dataTransfer.setData('application/reactflow', nodeType);
         event.dataTransfer.effectAllowed = 'move';
@@ -10,8 +13,8 @@ export function Sidebar() {
     return (
         <aside className="w-64 border-r bg-white h-full flex flex-col">
             <div className="p-4 border-b">
-                <h3 className="font-semibold text-slate-800">Gatilhos</h3>
-                <p className="text-xs text-slate-500">Quando a automação inicia</p>
+                <h3 className="font-semibold text-slate-800">{t('editor.triggersHeader')}</h3>
+                <p className="text-xs text-slate-500">{t('editor.triggersSubheader')}</p>
             </div>
 
             <div className="p-4 space-y-3 border-b">
@@ -26,8 +29,8 @@ export function Sidebar() {
                         <Play className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-700">Palavra-Chave</p>
-                        <p className="text-[10px] text-slate-400">DM ou Story</p>
+                        <p className="text-sm font-medium text-slate-700">{t('editor.nodeKeyword')}</p>
+                        <p className="text-[10px] text-slate-400">{t('editor.nodeKeywordDesc')}</p>
                     </div>
                 </div>
 
@@ -42,8 +45,8 @@ export function Sidebar() {
                         <MessageCircle className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-700">Comentário</p>
-                        <p className="text-[10px] text-slate-400">Post ou Reels</p>
+                        <p className="text-sm font-medium text-slate-700">{t('editor.nodeComment')}</p>
+                        <p className="text-[10px] text-slate-400">{t('editor.nodeCommentDesc')}</p>
                     </div>
                 </div>
 
@@ -58,14 +61,14 @@ export function Sidebar() {
                         <AtSign className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-700">Menção Story</p>
-                        <p className="text-[10px] text-slate-400">Quando te marcam</p>
+                        <p className="text-sm font-medium text-slate-700">{t('editor.nodeMention')}</p>
+                        <p className="text-[10px] text-slate-400">{t('editor.nodeMentionDesc')}</p>
                     </div>
                 </div>
             </div>
 
             <div className="p-4 bg-slate-50/50 border-b">
-                <h3 className="font-semibold text-slate-700 text-xs uppercase tracking-wider">Ações e Lógica</h3>
+                <h3 className="font-semibold text-slate-700 text-xs uppercase tracking-wider">{t('editor.actionsHeader')}</h3>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -80,8 +83,8 @@ export function Sidebar() {
                         <MessageSquare className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-700">Mensagem</p>
-                        <p className="text-[10px] text-slate-400">Enviar texto/mídia</p>
+                        <p className="text-sm font-medium text-slate-700">{t('editor.nodeMessage')}</p>
+                        <p className="text-[10px] text-slate-400">{t('editor.nodeMessageDesc')}</p>
                     </div>
                 </div>
 
@@ -96,8 +99,8 @@ export function Sidebar() {
                         <Clock className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-700">Aguardar</p>
-                        <p className="text-[10px] text-slate-400">Delay temporal</p>
+                        <p className="text-sm font-medium text-slate-700">{t('editor.nodeDelay')}</p>
+                        <p className="text-[10px] text-slate-400">{t('editor.nodeDelayDesc')}</p>
                     </div>
                 </div>
 
@@ -112,8 +115,8 @@ export function Sidebar() {
                         <Tag className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-700">Tags</p>
-                        <p className="text-[10px] text-slate-400">Adicionar/Remover</p>
+                        <p className="text-sm font-medium text-slate-700">{t('editor.nodeTag')}</p>
+                        <p className="text-[10px] text-slate-400">{t('editor.nodeTagDesc')}</p>
                     </div>
                 </div>
 
@@ -128,8 +131,8 @@ export function Sidebar() {
                         <HelpCircle className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-700">Condicional</p>
-                        <p className="text-[10px] text-slate-400">Sim ou Não</p>
+                        <p className="text-sm font-medium text-slate-700">{t('editor.nodeCondition')}</p>
+                        <p className="text-[10px] text-slate-400">{t('editor.nodeConditionDesc')}</p>
                     </div>
                 </div>
 
@@ -144,8 +147,8 @@ export function Sidebar() {
                         <Sparkles className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-700">Resposta IA</p>
-                        <p className="text-[10px] text-slate-400">ChatGPT Inteligente</p>
+                        <p className="text-sm font-medium text-slate-700">{t('editor.nodeAI')}</p>
+                        <p className="text-[10px] text-slate-400">{t('editor.nodeAIDesc')}</p>
                     </div>
                 </div>
 
@@ -160,15 +163,16 @@ export function Sidebar() {
                         <Globe className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-700">Webhook API</p>
-                        <p className="text-[10px] text-slate-400">Enviar para seu Server</p>
+                        <p className="text-sm font-medium text-slate-700">{t('editor.nodeWebhook')}</p>
+                        <p className="text-[10px] text-slate-400">{t('editor.nodeWebhookDesc')}</p>
                     </div>
                 </div>
             </div>
 
             <div className="p-4 bg-slate-50 border-t text-center">
-                <p className="text-xs text-slate-400">Creatye Flow Builder v2.0</p>
+                <p className="text-xs text-slate-400">{t('editor.footer')}</p>
             </div>
         </aside>
     );
 }
+

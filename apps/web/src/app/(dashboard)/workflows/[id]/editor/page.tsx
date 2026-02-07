@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/contexts/language-context"
 import { Badge } from "@/components/ui/badge"
 import { toast } from 'sonner'
 import { Save, Play, ArrowLeft, Trash2, Plus, Info, Braces, X } from 'lucide-react'
@@ -60,6 +61,7 @@ function FlowEditor() {
     const { id } = useParams();
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const { screenToFlowPosition } = useReactFlow();
+    const { t } = useLanguage();
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -242,21 +244,21 @@ function FlowEditor() {
                 })
             });
 
-            if (!res.ok) throw new Error("Erro ao salvar");
+            if (!res.ok) throw new Error(t('editor.errorSave'));
 
-            toast.success(publish ? "Automação Publicada!" : "Salvo com sucesso!");
+            toast.success(publish ? t('editor.publishedSuccess') : t('editor.savedSuccess'));
             if (publish) {
                 setWorkflow({ ...workflow, status: 'PUBLISHED', flowDefinition });
             }
         } catch (e) {
             console.error(e);
-            toast.error("Erro ao salvar");
+            toast.error(t('editor.errorSave'));
         } finally {
             setSaving(false);
         }
     }
 
-    if (loading) return <div className="flex items-center justify-center h-screen text-muted-foreground">Carregando editor...</div>
+    if (loading) return <div className="flex items-center justify-center h-screen text-muted-foreground">{t('editor.loading')}</div>
 
     return (
         <div className="h-[calc(100vh-theme(spacing.16))] flex flex-col bg-slate-50">
@@ -272,19 +274,19 @@ function FlowEditor() {
                         <div className="flex items-center gap-2">
                             <h2 className="text-xl font-bold text-slate-800">{workflow?.title}</h2>
                             <Badge variant={workflow?.status === 'PUBLISHED' ? 'success' : 'secondary'} className="text-xs">
-                                {workflow?.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho'}
+                                {workflow?.status === 'PUBLISHED' ? t('editor.published') : t('editor.draft')}
                             </Badge>
                         </div>
-                        <p className="text-xs text-slate-500">{workflow?.description || 'Fluxo de automação'}</p>
+                        <p className="text-xs text-slate-500">{workflow?.description || t('editor.automationFlow')}</p>
                     </div>
                 </div>
 
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} className="border-slate-200">
-                        <Save className="w-4 h-4 mr-2" /> Salvar
+                        <Save className="w-4 h-4 mr-2" /> {t('editor.save')}
                     </Button>
                     <Button onClick={() => handleSave(true)} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
-                        <Play className="w-4 h-4 mr-2" /> {workflow?.status === 'PUBLISHED' ? 'Atualizar' : 'Publicar'}
+                        <Play className="w-4 h-4 mr-2" /> {workflow?.status === 'PUBLISHED' ? t('editor.update') : t('editor.publish')}
                     </Button>
                 </div>
             </div>
@@ -320,20 +322,20 @@ function FlowEditor() {
                     <SheetHeader className="mb-6">
                         <div className="flex items-center justify-between">
                             <SheetTitle>
-                                {selectedNode?.type === 'instagram' ? 'Editar Mensagem' :
-                                    selectedNode?.type?.startsWith('trigger') ? 'Configurar Gatilho' :
-                                        selectedNode?.type === 'ai_response' ? 'Configurar Inteligência Artificial' :
-                                            selectedNode?.type === 'webhook' ? 'Configurar Webhook/API' :
-                                                selectedNode?.type === 'delay' ? 'Editar Aguardar' :
-                                                    selectedNode?.type === 'tag' ? 'Editar Tags' :
-                                                        selectedNode?.type === 'condition' ? 'Editar Condição' : 'Propriedades'}
+                                {selectedNode?.type === 'instagram' ? t('editor.editMessage') :
+                                    selectedNode?.type?.startsWith('trigger') ? t('editor.configTrigger') :
+                                        selectedNode?.type === 'ai_response' ? t('editor.configAI') :
+                                            selectedNode?.type === 'webhook' ? t('editor.configWebhook') :
+                                                selectedNode?.type === 'delay' ? t('editor.editDelay') :
+                                                    selectedNode?.type === 'tag' ? t('editor.editTags') :
+                                                        selectedNode?.type === 'condition' ? t('editor.editCondition') : t('editor.propertiesTitle')}
                             </SheetTitle>
                             <Button variant="ghost" size="icon" onClick={deleteNode} className="text-red-500 hover:bg-red-50 hover:text-red-600">
                                 <Trash2 className="w-4 h-4" />
                             </Button>
                         </div>
                         <SheetDescription>
-                            Configure os detalhes deste bloco.
+                            {t('editor.configDetails')}
                         </SheetDescription>
                     </SheetHeader>
 
@@ -343,19 +345,19 @@ function FlowEditor() {
                             {selectedNode.type === 'ai_response' && (
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">Instrução da IA (Prompt)</label>
+                                        <label className="text-sm font-medium text-slate-700">{t('editor.aiPromptLabel')}</label>
                                         <Textarea
-                                            placeholder="Ex: Você é um vendedor da loja Creatye..."
+                                            placeholder={t('editor.aiPromptPlaceholder')}
                                             className="min-h-[150px] bg-slate-50"
                                             value={(selectedNode.data as any).prompt || ''}
                                             onChange={(e) => updateNodeData(selectedNode.id, { prompt: e.target.value })}
                                         />
                                         <p className="text-[10px] text-slate-400">
-                                            A IA usará o histórico da conversa para gerar uma resposta baseada nesta instrução.
+                                            {t('editor.aiHelpText')}
                                         </p>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">Modelo</label>
+                                        <label className="text-sm font-medium text-slate-700">{t('editor.aiModelLabel')}</label>
                                         <select
                                             className="w-full p-2 bg-slate-50 border rounded-md text-sm"
                                             value={(selectedNode.data as any).model || 'gpt-4o-mini'}
@@ -372,7 +374,7 @@ function FlowEditor() {
                             {selectedNode.type === 'webhook' && (
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">URL do Endpoint</label>
+                                        <label className="text-sm font-medium text-slate-700">{t('editor.webhookUrlLabel')}</label>
                                         <Input
                                             placeholder="https://sua-api.com/webhooks"
                                             value={(selectedNode.data as any).url || ''}
@@ -381,7 +383,7 @@ function FlowEditor() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">Método</label>
+                                        <label className="text-sm font-medium text-slate-700">{t('editor.webhookMethodLabel')}</label>
                                         <Tabs
                                             defaultValue={(selectedNode.data as any).method || 'POST'}
                                             onValueChange={(val) => updateNodeData(selectedNode.id, { method: val })}
@@ -394,7 +396,7 @@ function FlowEditor() {
                                     </div>
                                     <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
                                         <p className="text-[10px] text-amber-700 leading-relaxed">
-                                            <strong>Nota:</strong> Enviaremos o ID do usuário e o conteúdo da última interação no corpo da requisição (JSON).
+                                            <strong>Nota:</strong> {t('editor.webhookNote')}
                                         </p>
                                     </div>
                                 </div>
@@ -407,9 +409,9 @@ function FlowEditor() {
                                     {selectedNode.type.startsWith('trigger') && (
                                         <div className="space-y-4 mb-6 pb-6 border-b border-dashed">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-slate-700">Configuração de Gatilho</label>
+                                                <label className="text-sm font-medium text-slate-700">{t('editor.triggerConfigTitle')}</label>
                                                 <div className="space-y-2">
-                                                    <label className="text-xs text-slate-500">Palavra-Chave</label>
+                                                    <label className="text-xs text-slate-500">{t('editor.keywordLabel')}</label>
                                                     <Input
                                                         placeholder="Ex: QUERO"
                                                         value={(selectedNode.data as any).config?.keyword || ''}
@@ -426,19 +428,19 @@ function FlowEditor() {
                                     {selectedNode.type === 'instagram' && (
                                         <div className="space-y-3">
                                             <div className="flex items-center justify-between">
-                                                <label className="text-sm font-medium text-slate-700">Mensagem</label>
+                                                <label className="text-sm font-medium text-slate-700">{t('editor.messageLabel')}</label>
                                                 <Popover>
                                                     <PopoverTrigger asChild>
                                                         <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                                                            <Braces className="w-3 h-3" /> Variáveis
+                                                            <Braces className="w-3 h-3" /> {t('editor.variables')}
                                                         </Button>
                                                     </PopoverTrigger>
                                                     <PopoverContent className="w-[200px] p-0" align="end">
                                                         <Command>
-                                                            <CommandInput placeholder="Buscar variável..." />
+                                                            <CommandInput placeholder={t('editor.searchVariable')} />
                                                             <CommandList>
-                                                                <CommandEmpty>Nenhuma variável.</CommandEmpty>
-                                                                <CommandGroup heading="Contato">
+                                                                <CommandEmpty>{t('editor.noVariables')}</CommandEmpty>
+                                                                <CommandGroup heading={t('editor.contactGroup')}>
                                                                     {['nome', 'username'].map(v => (
                                                                         <CommandItem key={v} onSelect={() => {
                                                                             const currentMsg = (selectedNode.data as any).content?.message || '';
@@ -469,11 +471,11 @@ function FlowEditor() {
                                     {/* Image Config (Only for Message) */}
                                     {selectedNode.type === 'instagram' && (
                                         <div className="space-y-3 pt-6 border-t border-slate-100">
-                                            <label className="text-sm font-medium text-slate-700">Imagem</label>
+                                            <label className="text-sm font-medium text-slate-700">{t('editor.imageLabel')}</label>
                                             <Tabs defaultValue={(selectedNode.data as any).content?.imageUrl?.includes('supabase') ? 'upload' : 'url'}>
                                                 <TabsList className="grid w-full grid-cols-2 bg-slate-100">
-                                                    <TabsTrigger value="url">URL Externa</TabsTrigger>
-                                                    <TabsTrigger value="upload">Upload</TabsTrigger>
+                                                    <TabsTrigger value="url">{t('editor.externalUrl')}</TabsTrigger>
+                                                    <TabsTrigger value="upload">{t('editor.upload')}</TabsTrigger>
                                                 </TabsList>
                                                 <TabsContent value="url">
                                                     <Input
@@ -500,16 +502,16 @@ function FlowEditor() {
                                                                     async () => {
                                                                         const res = await fetch('/api/upload', { method: 'POST', body: formData });
                                                                         const data = await res.json();
-                                                                        if (!res.ok) throw new Error(data.error || 'Erro no upload');
+                                                                        if (!res.ok) throw new Error(data.error || t('editor.uploadError'));
                                                                         return data;
                                                                     },
                                                                     {
-                                                                        loading: 'Enviando imagem...',
+                                                                        loading: t('editor.uploading'),
                                                                         success: (data) => {
                                                                             updateNodeData(selectedNode.id, {
                                                                                 content: { ...(selectedNode.data as any).content, imageUrl: data.url }
                                                                             });
-                                                                            return 'Imagem enviada com sucesso!';
+                                                                            return t('editor.uploadSuccess');
                                                                         },
                                                                         error: (err) => `${err.message}`
                                                                     }
@@ -538,7 +540,7 @@ function FlowEditor() {
                                     {/* Buttons Config (Only for Message) */}
                                     {selectedNode.type === 'instagram' && (
                                         <div className="pt-6 border-t border-slate-100 space-y-4">
-                                            <label className="text-sm font-medium text-slate-700">Botões</label>
+                                            <label className="text-sm font-medium text-slate-700">{t('editor.buttonsLabel')}</label>
                                             {((selectedNode.data as any).content?.buttons || []).map((btn: any, index: number) => (
                                                 <div key={index} className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 relative group">
                                                     <Button
@@ -553,7 +555,7 @@ function FlowEditor() {
                                                         <Trash2 className="w-3 h-3" />
                                                     </Button>
                                                     <Input
-                                                        placeholder="Nome do botão"
+                                                        placeholder={t('editor.buttonNamePlaceholder')}
                                                         value={btn.label || ''}
                                                         onChange={(e) => {
                                                             const b = [...((selectedNode.data as any).content?.buttons || [])];
@@ -583,7 +585,7 @@ function FlowEditor() {
                                                         updateNodeData(selectedNode.id, { content: { ...(selectedNode.data as any).content, buttons: b } });
                                                     }}
                                                 >
-                                                    <Plus className="w-4 h-4 mr-2" /> Adicionar botão
+                                                    <Plus className="w-4 h-4 mr-2" /> {t('editor.addButton')}
                                                 </Button>
                                             )}
                                         </div>
@@ -616,10 +618,10 @@ function FlowEditor() {
                                                 updateNodeData(selectedNode.id, { time: `${val} ${e.target.value}` });
                                             }}
                                         >
-                                            <option value="segundo(s)">Segundo(s)</option>
-                                            <option value="minuto(s)">Minuto(s)</option>
-                                            <option value="hora(s)">Hora(s)</option>
-                                            <option value="dia(s)">Dia(s)</option>
+                                            <option value="segundo(s)">{t('editor.seconds')}</option>
+                                            <option value="minuto(s)">{t('editor.minutes')}</option>
+                                            <option value="hora(s)">{t('editor.hours')}</option>
+                                            <option value="dia(s)">{t('editor.days')}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -628,7 +630,7 @@ function FlowEditor() {
                             {/* TAG CONFIG */}
                             {selectedNode.type === 'tag' && (
                                 <div className="space-y-4">
-                                    <label className="text-sm font-medium text-slate-700">Gerenciar Etiquetas</label>
+                                    <label className="text-sm font-medium text-slate-700">{t('editor.manageTagsLabel')}</label>
                                     <div className="space-y-2">
                                         {((selectedNode.data as any).tags || []).map((tag: string, i: number) => (
                                             <div key={i} className="flex gap-2">
@@ -661,7 +663,7 @@ function FlowEditor() {
                                                 updateNodeData(selectedNode.id, { tags: t });
                                             }}
                                         >
-                                            <Plus className="w-4 h-4 mr-2" /> Adicionar Tag
+                                            <Plus className="w-4 h-4 mr-2" /> {t('editor.addTag')}
                                         </Button>
                                     </div>
                                 </div>
@@ -671,7 +673,7 @@ function FlowEditor() {
                             {selectedNode.type === 'condition' && (
                                 <div className="space-y-6">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">Tipo de Campo</label>
+                                        <label className="text-sm font-medium text-slate-700">{t('editor.fieldType')}</label>
                                         <select
                                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm bg-slate-50"
                                             value={(selectedNode.data as any).condition?.field || 'tag'}
@@ -679,15 +681,15 @@ function FlowEditor() {
                                                 condition: { ...(selectedNode.data as any).condition, field: e.target.value }
                                             })}
                                         >
-                                            <option value="tag">Etiqueta</option>
-                                            <option value="custom_field">Campo Personalizado</option>
-                                            <option value="follower_status">Status de Seguidor</option>
-                                            <option value="contact_score">Pontuação do Contato</option>
+                                            <option value="tag">{t('editor.tag')}</option>
+                                            <option value="custom_field">{t('editor.customField')}</option>
+                                            <option value="follower_status">{t('editor.followerStatus')}</option>
+                                            <option value="contact_score">{t('editor.contactScore')}</option>
                                         </select>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">Operação</label>
+                                        <label className="text-sm font-medium text-slate-700">{t('editor.operation')}</label>
                                         <select
                                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm bg-slate-50"
                                             value={(selectedNode.data as any).condition?.operator || 'has_tag'}
@@ -695,23 +697,23 @@ function FlowEditor() {
                                                 condition: { ...(selectedNode.data as any).condition, operator: e.target.value }
                                             })}
                                         >
-                                            <option value="has_tag">Tem etiqueta</option>
-                                            <option value="not_has_tag">Não tem etiqueta</option>
+                                            <option value="has_tag">{t('editor.hasTag')}</option>
+                                            <option value="not_has_tag">{t('editor.notHasTag')}</option>
                                         </select>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">Etiqueta</label>
+                                        <label className="text-sm font-medium text-slate-700">{t('editor.tag')}</label>
                                         <Input
                                             className="bg-slate-50"
-                                            placeholder="Ex: REELS GERAL"
+                                            placeholder={t('editor.tagPlaceholder')}
                                             value={(selectedNode.data as any).condition?.value || ''}
                                             onChange={(e) => updateNodeData(selectedNode.id, {
                                                 condition: { ...(selectedNode.data as any).condition, value: e.target.value }
                                             })}
                                         />
                                         <p className="text-[10px] text-slate-400">
-                                            Digite exatamente o nome da etiqueta (Tag) que deseja verificar.
+                                            {t('editor.conditionHelp')}
                                         </p>
                                     </div>
                                 </div>
