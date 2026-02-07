@@ -7,13 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Instagram, Image as ImageIcon, CheckCircle2, Play, Sparkles, Globe, AtSign, MessageCircle, GitFork } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/language-context";
 
 // Custom Instagram Card Node
 export const InstagramNode = memo(({ data, selected }: NodeProps) => {
+    const { t } = useLanguage();
     const { content = {}, title, subtitle, type, stats = { sent: 0, readRate: '0%' } } = data as any;
     const isCard = !!content.imageUrl;
-    const defaultTitle = isCard ? 'Cartões' : 'Botões';
-    const defaultSubtitle = isCard ? 'Envie cartões interativos.' : 'Enviar mensagem com botões';
+    const defaultTitle = isCard ? t('editor.cards') : t('editor.buttonsLabel');
+    const defaultSubtitle = isCard ? t('editor.cardsDesc') : t('editor.buttonsDesc');
 
     const nodeTitle = (title && title !== 'Cartões') ? title : defaultTitle;
     const nodeSubtitle = (subtitle && subtitle !== 'Envie cartões interativos.') ? subtitle : defaultSubtitle;
@@ -49,11 +51,11 @@ export const InstagramNode = memo(({ data, selected }: NodeProps) => {
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-4 text-center py-2 border-b border-dashed">
                     <div>
-                        <p className="text-xs text-slate-400 font-medium uppercase">Envios</p>
+                        <p className="text-xs text-slate-400 font-medium uppercase">{t('editor.sentStats')}</p>
                         <p className="text-xl font-bold text-blue-600">{stats.sent}</p>
                     </div>
                     <div>
-                        <p className="text-xs text-slate-400 font-medium uppercase">Leituras</p>
+                        <p className="text-xs text-slate-400 font-medium uppercase">{t('editor.readStats')}</p>
                         <p className="text-xl font-bold text-blue-600">{stats.readRate}</p>
                     </div>
                 </div>
@@ -74,7 +76,7 @@ export const InstagramNode = memo(({ data, selected }: NodeProps) => {
 
                     {/* Text Preview */}
                     <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                        {content.message || "Escreva sua mensagem aqui..."}
+                        {content.message || t('editor.writeMessagePlaceholder')}
                     </p>
 
                     {/* Button(s) Preview */}
@@ -87,7 +89,7 @@ export const InstagramNode = memo(({ data, selected }: NodeProps) => {
                                     className="w-full justify-between bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700 h-10"
                                 >
                                     <span className="text-xs font-bold uppercase tracking-wider truncate max-w-[200px]">
-                                        {btn.label || "Botão"}
+                                        {btn.label || t('editor.buttonDefault')}
                                     </span>
                                     {btn.stats && (
                                         <Badge variant="secondary" className="bg-blue-200 text-blue-700 hover:bg-blue-300">
@@ -104,7 +106,7 @@ export const InstagramNode = memo(({ data, selected }: NodeProps) => {
                                 className="w-full justify-between bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700 h-10"
                             >
                                 <span className="text-xs font-bold uppercase tracking-wider">
-                                    {content.cta.text || "Botão"}
+                                    {content.cta.text || t('editor.buttonDefault')}
                                 </span>
                             </Button>
                         </div>
@@ -112,7 +114,7 @@ export const InstagramNode = memo(({ data, selected }: NodeProps) => {
                 </div>
 
                 <div className="flex justify-end items-center gap-2">
-                    <span className="text-xs font-medium text-slate-400">Próximo passo</span>
+                    <span className="text-xs font-medium text-slate-400">{t('editor.nextStep')}</span>
                     <div className="bg-blue-500 w-3 h-3 rounded-full shadow-sm"></div>
                 </div>
             </div>
@@ -129,6 +131,7 @@ export const InstagramNode = memo(({ data, selected }: NodeProps) => {
 
 // Trigger Node (Keyword based)
 export const TriggerNode = memo(({ data, selected }: NodeProps) => {
+    const { t } = useLanguage();
     const {
         type = 'DM_RECEIVED',
         config = { keyword: '', matchType: 'exact' }
@@ -139,10 +142,10 @@ export const TriggerNode = memo(({ data, selected }: NodeProps) => {
             type === 'STORY_MENTION' || type === 'trigger_mention' ? <AtSign size={18} /> :
                 type === 'FEED_COMMENT' || type === 'trigger_comment' ? <MessageCircle size={18} /> : <Play size={18} fill="currentColor" />;
 
-    const typeLabel = type === 'DM_RECEIVED' ? 'Mensagem Direta' :
-        type === 'STORY_REPLY' ? 'Resposta de Story' :
-            type === 'trigger_mention' ? 'Menção no Story' :
-                type === 'trigger_comment' ? 'Comentário em Post' : 'Gatilho';
+    const typeLabel = type === 'DM_RECEIVED' ? t('createAutomation.channelDm') :
+        type === 'STORY_REPLY' ? t('createAutomation.channelStory') :
+            type === 'trigger_mention' ? t('editor.nodeMention') :
+                type === 'trigger_comment' ? t('createAutomation.channelFeed') : t('editor.trigger');
 
     return (
         <div className={cn(
@@ -164,26 +167,26 @@ export const TriggerNode = memo(({ data, selected }: NodeProps) => {
                 </div>
                 <div>
                     <h3 className="font-bold text-emerald-900 text-sm">{typeLabel}</h3>
-                    <p className="text-[10px] text-emerald-600 font-medium uppercase tracking-wider italic">Gatilho de Entrada</p>
+                    <p className="text-[10px] text-emerald-600 font-medium uppercase tracking-wider italic">{t('editor.entryTrigger')}</p>
                 </div>
             </div>
 
             {/* Content */}
             <div className="p-4 space-y-3">
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Se o usuário enviar:</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t('editor.ifUserSends')}</p>
                     <div className="flex items-center gap-2">
                         <Badge variant="outline" className="bg-white border-emerald-200 text-emerald-700 font-mono">
-                            {config.keyword || 'Qualquer palavra'}
+                            {config.keyword || t('editor.anyKeyword')}
                         </Badge>
                         <span className="text-[10px] text-slate-400">
-                            ({config.matchType === 'exact' ? 'Exato' : 'Contém'})
+                            ({config.matchType === 'exact' ? t('editor.exactMatch') : t('editor.containsMatch')})
                         </span>
                     </div>
                 </div>
 
                 <div className="flex justify-end items-center gap-2 pt-2">
-                    <span className="text-xs font-medium text-slate-400">Iniciar fluxo</span>
+                    <span className="text-xs font-medium text-slate-400">{t('editor.startFlow')}</span>
                     <div className="bg-emerald-500 w-3 h-3 rounded-full shadow-sm"></div>
                 </div>
             </div>
@@ -200,6 +203,7 @@ export const TriggerNode = memo(({ data, selected }: NodeProps) => {
 
 // Start Node (Old entry, now just a helper or deprecated in favor of Trigger)
 export const StartNode = memo(({ data, selected }: NodeProps) => {
+    const { t } = useLanguage();
     return (
         <div className={cn(
             "w-[280px] shadow-sm rounded-xl bg-white border transition-all p-6",
@@ -211,13 +215,13 @@ export const StartNode = memo(({ data, selected }: NodeProps) => {
                     <Play size={20} fill="currentColor" className="ml-0.5" />
                 </div>
                 <div>
-                    <h3 className="font-bold text-slate-800">Início</h3>
-                    <p className="text-xs text-slate-500">Fluxo Visual</p>
+                    <h3 className="font-bold text-slate-800">{t('editor.startNode')}</h3>
+                    <p className="text-xs text-slate-500">{t('editor.visualFlow')}</p>
                 </div>
             </div>
 
             <p className="text-xs text-slate-400 mb-6 leading-relaxed">
-                Connecte um <span className="text-emerald-600 font-bold">Gatilho</span> ou inicie a lógica aqui.
+                {t('editor.connectTriggerHelp')}
             </p>
 
             {/* Output Handle */}
@@ -231,6 +235,7 @@ export const StartNode = memo(({ data, selected }: NodeProps) => {
 })
 // Delay Node
 export const DelayNode = memo(({ data, selected }: NodeProps) => {
+    const { t } = useLanguage();
     return (
         <div className={cn(
             "w-[280px] shadow-sm rounded-xl bg-white border transition-all",
@@ -244,8 +249,8 @@ export const DelayNode = memo(({ data, selected }: NodeProps) => {
                     <div className="w-5 h-5 flex items-center justify-center font-bold text-xs">⏳</div>
                 </div>
                 <div>
-                    <h3 className="font-semibold text-slate-800">Aguardar</h3>
-                    <p className="text-xs text-slate-500">{(data as any).time || 'Definir tempo'}</p>
+                    <h3 className="font-semibold text-slate-800">{t('editor.nodeDelay')}</h3>
+                    <p className="text-xs text-slate-500">{(data as any).time || t('editor.defineTime')}</p>
                 </div>
             </div>
 
@@ -256,6 +261,7 @@ export const DelayNode = memo(({ data, selected }: NodeProps) => {
 
 // Tag Node
 export const TagNode = memo(({ data, selected }: NodeProps) => {
+    const { t } = useLanguage();
     return (
         <div className={cn(
             "w-[280px] shadow-sm rounded-xl bg-white border transition-all",
@@ -269,7 +275,7 @@ export const TagNode = memo(({ data, selected }: NodeProps) => {
                     <div className="w-5 h-5 flex items-center justify-center font-bold text-xs">🏷️</div>
                 </div>
                 <div className="flex-1">
-                    <h3 className="font-semibold text-slate-800">Tags</h3>
+                    <h3 className="font-semibold text-slate-800">{t('editor.nodeTag')}</h3>
                     <div className="flex flex-wrap gap-1 mt-1">
                         {((data as any).tags || ['TAG_DEMO']).map((tag: string, i: number) => (
                             <Badge key={i} variant="secondary" className="text-[10px] px-1 h-5">{tag}</Badge>
@@ -285,6 +291,7 @@ export const TagNode = memo(({ data, selected }: NodeProps) => {
 
 // AI Response Node
 export const AINode = memo(({ data, selected }: NodeProps) => {
+    const { t } = useLanguage();
     return (
         <div className={cn(
             "w-[300px] shadow-lg rounded-xl bg-white border-2 transition-all overflow-hidden",
@@ -298,21 +305,21 @@ export const AINode = memo(({ data, selected }: NodeProps) => {
                     <Sparkles size={18} />
                 </div>
                 <div>
-                    <h3 className="font-bold text-purple-900 text-sm">Resposta IA</h3>
-                    <p className="text-[10px] text-purple-600 font-medium uppercase">Inteligência Artificial</p>
+                    <h3 className="font-bold text-purple-900 text-sm">{t('editor.nodeAI')}</h3>
+                    <p className="text-[10px] text-purple-600 font-medium uppercase">{t('editor.artificialIntelligence')}</p>
                 </div>
             </div>
 
             <div className="p-4 space-y-3">
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Prompt / Instrução:</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">{t('editor.aiInstruction')}</p>
                     <p className="text-xs text-slate-700 italic truncate italic">
-                        "{(data as any).prompt || 'Responda educadamente...'}"
+                        "{(data as any).prompt || t('editor.aiPlaceholder')}"
                     </p>
                 </div>
 
                 <div className="flex justify-end items-center gap-2 pt-2">
-                    <span className="text-xs font-medium text-slate-400">Próximo passo</span>
+                    <span className="text-xs font-medium text-slate-400">{t('editor.nextStep')}</span>
                     <div className="bg-purple-500 w-3 h-3 rounded-full shadow-sm"></div>
                 </div>
             </div>
@@ -324,6 +331,7 @@ export const AINode = memo(({ data, selected }: NodeProps) => {
 
 // Webhook Node
 export const WebhookNode = memo(({ data, selected }: NodeProps) => {
+    const { t } = useLanguage();
     return (
         <div className={cn(
             "w-[300px] shadow-lg rounded-xl bg-white border-2 transition-all overflow-hidden",
@@ -337,8 +345,8 @@ export const WebhookNode = memo(({ data, selected }: NodeProps) => {
                     <Globe size={18} />
                 </div>
                 <div>
-                    <h3 className="font-bold text-slate-800 text-sm">Webhook API</h3>
-                    <p className="text-[10px] text-slate-500 font-medium uppercase">Integração Externa</p>
+                    <h3 className="font-bold text-slate-800 text-sm">{t('editor.nodeWebhook')}</h3>
+                    <p className="text-[10px] text-slate-500 font-medium uppercase">{t('editor.externalIntegration')}</p>
                 </div>
             </div>
 
@@ -349,7 +357,7 @@ export const WebhookNode = memo(({ data, selected }: NodeProps) => {
                 </div>
 
                 <div className="flex justify-end items-center gap-2 pt-2">
-                    <span className="text-xs font-medium text-slate-400">Próximo passo</span>
+                    <span className="text-xs font-medium text-slate-400">{t('editor.nextStep')}</span>
                     <div className="bg-slate-500 w-3 h-3 rounded-full shadow-sm"></div>
                 </div>
             </div>
@@ -361,11 +369,12 @@ export const WebhookNode = memo(({ data, selected }: NodeProps) => {
 
 // Condition Node
 export const ConditionNode = memo(({ data, selected }: NodeProps) => {
+    const { t } = useLanguage();
     const condition = (data as any).condition || {};
     // Construct label (e.g. "Etiqueta 'REELS GERAL'")
     const label = condition.value
-        ? `${condition.field === 'tag' ? 'Etiqueta' : 'Campo'} "${condition.value}"`
-        : 'Configurar condição';
+        ? `${condition.field === 'tag' ? t('editor.tag') : t('editor.field')} "${condition.value}"`
+        : t('editor.configureCondition');
 
     return (
         <div className={cn(
@@ -386,8 +395,8 @@ export const ConditionNode = memo(({ data, selected }: NodeProps) => {
                         <GitFork size={20} className="rotate-90" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-slate-800 text-sm">Condicional</h3>
-                        <p className="text-[10px] text-slate-500">Avaliação condicional.</p>
+                        <h3 className="font-semibold text-slate-800 text-sm">{t('editor.nodeCondition')}</h3>
+                        <p className="text-[10px] text-slate-500">{t('editor.conditionEvaluation')}</p>
                     </div>
                 </div>
             </div>
@@ -395,7 +404,7 @@ export const ConditionNode = memo(({ data, selected }: NodeProps) => {
             {/* Content */}
             <div className="p-4 space-y-4 pt-3">
                 <p className="text-[10px] text-slate-400 text-center">
-                    Estamos coletando métricas deste bloco...
+                    {t('editor.collectingMetrics')}
                 </p>
 
                 {/* Condition Label */}
@@ -409,7 +418,7 @@ export const ConditionNode = memo(({ data, selected }: NodeProps) => {
                 <div className="space-y-2">
                     {/* SIM */}
                     <div className="relative bg-emerald-50 border border-emerald-100 rounded-md h-9 flex items-center justify-center">
-                        <span className="text-emerald-600 font-bold text-xs tracking-wider">SIM</span>
+                        <span className="text-emerald-600 font-bold text-xs tracking-wider">{t('editor.yes')}</span>
                         <Handle
                             type="source"
                             position={Position.Right}
@@ -420,7 +429,7 @@ export const ConditionNode = memo(({ data, selected }: NodeProps) => {
 
                     {/* NÃO */}
                     <div className="relative bg-rose-50 border border-rose-100 rounded-md h-9 flex items-center justify-center">
-                        <span className="text-rose-600 font-bold text-xs tracking-wider">NÃO</span>
+                        <span className="text-rose-600 font-bold text-xs tracking-wider">{t('editor.no')}</span>
                         <Handle
                             type="source"
                             position={Position.Right}

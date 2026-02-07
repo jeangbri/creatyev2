@@ -1,0 +1,12 @@
+[
+    {
+        "task": "Translate Workflow Editor Cards",
+        "status": "completed",
+        "details": "Translated all cards and nodes within the workflow editor to English and Portuguese.",
+        "files_modified": [
+            "apps/web/src/lib/translations.ts",
+            "apps/web/src/components/flow/custom-nodes.tsx"
+        ],
+        "verification": "Checked for hardcoded strings and replaced them with translation keys. Verified syntax in translation file."
+    }
+]

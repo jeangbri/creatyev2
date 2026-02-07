@@ -220,7 +220,37 @@ export const translations = {
             notHasTag: "Não tem etiqueta",
             tagPlaceholder: "Ex: REELS GERAL",
             conditionHelp: "Digite exatamente o nome da etiqueta (Tag) que deseja verificar.",
-            footer: "Creatye Flow Builder v2.0"
+            footer: "Creatye Flow Builder v2.0",
+
+            // New Node Translations
+            cards: "Cartões",
+            cardsDesc: "Envie cartões interativos.",
+            buttonsDesc: "Enviar mensagem com botões",
+            sentStats: "Envios",
+            readStats: "Leituras",
+            nextStep: "Próximo passo",
+            writeMessagePlaceholder: "Escreva sua mensagem aqui...",
+            buttonDefault: "Botão",
+            entryTrigger: "Gatilho de Entrada",
+            ifUserSends: "Se o usuário enviar:",
+            anyKeyword: "Qualquer palavra",
+            exactMatch: "Exato",
+            containsMatch: "Contém",
+            startFlow: "Iniciar fluxo",
+            startNode: "Início",
+            visualFlow: "Fluxo Visual",
+            connectTriggerHelp: "Conecte um Gatilho ou inicie a lógica aqui.",
+            defineTime: "Definir tempo",
+            artificialIntelligence: "Inteligência Artificial",
+            aiInstruction: "Prompt / Instrução:",
+            aiPlaceholder: "Responda educadamente...",
+            externalIntegration: "Integração Externa",
+            conditionEvaluation: "Avaliação condicional.",
+            collectingMetrics: "Estamos coletando métricas deste bloco...",
+            configureCondition: "Configurar condição",
+            field: "Campo",
+            yes: "SIM",
+            no: "NÃO"
         }
     },
     en: {
@@ -442,7 +472,37 @@ export const translations = {
             notHasTag: "Does not have tag",
             tagPlaceholder: "Ex: REELS GENERAL",
             conditionHelp: "Type exactly the tag name you want to verify.",
-            footer: "Creatye Flow Builder v2.0"
+            footer: "Creatye Flow Builder v2.0",
+
+            // New Node Translations
+            cards: "Cards",
+            cardsDesc: "Send interactive cards.",
+            buttonsDesc: "Send message with buttons",
+            sentStats: "Sent",
+            readStats: "Reads",
+            nextStep: "Next step",
+            writeMessagePlaceholder: "Write your message here...",
+            buttonDefault: "Button",
+            entryTrigger: "Entry Trigger",
+            ifUserSends: "If user sends:",
+            anyKeyword: "Any keyword",
+            exactMatch: "Exact",
+            containsMatch: "Contains",
+            startFlow: "Start flow",
+            startNode: "Start",
+            visualFlow: "Visual Flow",
+            connectTriggerHelp: "Connect a Trigger or start logic here.",
+            defineTime: "Set time",
+            artificialIntelligence: "Artificial Intelligence",
+            aiInstruction: "Prompt / Instruction:",
+            aiPlaceholder: "Reply politely...",
+            externalIntegration: "External Integration",
+            conditionEvaluation: "Conditional evaluation.",
+            collectingMetrics: "Collecting metrics for this block...",
+            configureCondition: "Configure condition",
+            field: "Field",
+            yes: "YES",
+            no: "NO"
         }
     }
 };
