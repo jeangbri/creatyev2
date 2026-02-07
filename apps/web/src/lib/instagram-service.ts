@@ -6,10 +6,13 @@ const IG_API_URL = "https://graph.instagram.com/v21.0";
 // NEW: Queue Job Handler or Inline Processor
 export async function handleWebhookJob(eventId: string, payloadOverride?: any) {
     let body;
-    let isInline = eventId.startsWith('inline-');
+    // We treat everything as "inline" in terms of not needing to update status if it was just passed in raw,
+    // BUT now we ensure we have a valid DB ID for the FK constraint.
+    let isInline = false;
 
     if (payloadOverride) {
         body = payloadOverride;
+        isInline = true;
     } else {
         const event = await prisma.webhookEvent.findUnique({ where: { id: eventId } });
         if (!event) return;
@@ -54,13 +57,27 @@ export async function handleWebhookJob(eventId: string, payloadOverride?: any) {
 }
 
 export async function processInstagramEvent(body: any, signature: string | null) {
-    // Legacy helper - redirects to job logic
-    console.log("[IG Service] Processing event via processInstagramEvent proxy...");
-    await handleWebhookJob("inline-proxy-" + Date.now(), body);
+    // Create a real event record to satisfy AutomationRun foreign key
+    try {
+        const event = await prisma.webhookEvent.create({
+            data: {
+                platform: 'INSTAGRAM',
+                eventType: 'WEBHOOK_POST',
+                platformEventId: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                payloadJson: body,
+                signatureValid: true, // In production, verify this!
+                processingStatus: 'PROCESSING'
+            }
+        });
+
+        console.log(`[IG Service] Created WebhookEvent ${event.id} for processing.`);
+        await handleWebhookJob(event.id);
+
+    } catch (e) {
+        console.error("Failed to persist webhook event, fallback to inline (might fail FK)", e);
+        await handleWebhookJob("inline-fallback-" + Date.now(), body);
+    }
 }
-
-// ... upsertContact ...
-
 
 // --- Helper: Fetch Public Profile ---
 async function fetchUserProfile(accessToken: string, userId: string) {
@@ -78,10 +95,6 @@ async function fetchUserProfile(accessToken: string, userId: string) {
 
 // --- Helper: Upsert Contact ---
 async function upsertContact(account: any, instagramId: string, usernameFallback?: string) {
-    // 1. Check if exists
-    // Note: If prisma.contact doesn't exist in schema, this will fail. ensure schema is updated.
-    // Use fallback to InstagramFollower or similar if needed, but for now assuming Contact model intends to exist.
-
     try {
         const existing = await prisma.contact.findUnique({
             where: {
@@ -133,37 +146,83 @@ async function upsertContact(account: any, instagramId: string, usernameFallback
     }
 }
 
+// --- Helper: Find Account safely ---
+async function findAccountByInstagramId(targetId: string) {
+    // 1. Direct Lookup
+    let account = await prisma.instagramAccount.findFirst({
+        where: { igUserId: targetId },
+        include: { workspace: true }
+    });
+
+    if (account) return account;
+
+    console.warn(`[IG Service] Account not found directly for ID: ${targetId}. Attempting resolution via tokens...`);
+
+    // 2. Self-Healing Search
+    const allAccounts = await prisma.instagramAccount.findMany({
+        where: { status: 'CONNECTED' }
+    });
+
+    for (const acc of allAccounts) {
+        try {
+            // Skip if no token
+            if (!acc.accessTokenEncrypted) continue;
+
+            const token = decrypt(acc.accessTokenEncrypted).trim();
+
+            let checkUrl = `https://graph.instagram.com/v21.0/${targetId}?fields=id,username&access_token=${token}`;
+            let res = await fetch(checkUrl);
+            let data = await res.json();
+
+            if (!res.ok) {
+                checkUrl = `https://graph.facebook.com/v21.0/${targetId}?fields=id,username&access_token=${token}`;
+                res = await fetch(checkUrl);
+                data = await res.json();
+            }
+
+            if (res.ok && data.username) {
+                if (data.username.toLowerCase() === acc.username.toLowerCase()) {
+                    console.log(`[IG Service] ✅ Match found! Token for ${acc.username} resolved ${targetId}. Updating DB...`);
+
+                    return await prisma.instagramAccount.update({
+                        where: { id: acc.id },
+                        data: {
+                            igUserId: targetId,
+                            username: data.username
+                        },
+                        include: { workspace: true }
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("Error in account resolution loop", e);
+        }
+    }
+    return null;
+}
 
 // --- Helper: Handle Comment Event ---
 async function handleCommentEvent(accountId: string, change: any, eventId?: string) {
     console.log(`[IG Service] Handling Comment Event for Account ${accountId}`);
 
     const value = change.value;
-    // Extract Comment Data
     const mediaId = value.media.id;
     const text = value.text;
     const commentId = value.id;
     const fromId = value.from.id;
     const fromUsername = value.from.username;
 
-    // Ignore self-comments
     if (fromId === accountId) return;
 
-    // 1. Find Account
-    const account = await prisma.instagramAccount.findFirst({
-        where: { igUserId: accountId },
-        include: { workspace: true }
-    });
+    const account = await findAccountByInstagramId(accountId);
 
     if (!account) {
-        console.warn(`[IG Service] Account not found for comment. Account ID: ${accountId}`);
+        console.warn(`[IG Service] CRITICAL: Account not found for comment. Account ID: ${accountId}`);
         return;
     }
 
-    // 2. Upsert Contact
     await upsertContact(account, fromId, fromUsername);
 
-    // 3. Find Matching Workflows
     const workflows = await prisma.workflow.findMany({
         where: {
             workspaceId: account.workspaceId,
@@ -183,20 +242,16 @@ async function handleCommentEvent(accountId: string, change: any, eventId?: stri
 
     console.log(`[IG Service] Found ${workflows.length} workflows for FEED_COMMENT`);
 
-    // 4. Check Matches
     for (const workflow of workflows) {
         const trigger = workflow.triggers.find(t => t.type === 'FEED_COMMENT');
         if (!trigger) continue;
 
         const config = trigger.configJson as any;
 
-        // Check Post ID (if specific)
         if (config.targetMediaId && config.targetMediaId !== mediaId) {
-            console.log(`[IG Service] Workflow ${workflow.title} skipped. Target Media Mismatch.`);
             continue;
         }
 
-        // Check Keywords
         const keywords = config.keywords || [];
         const matchMode = config.matchMode || 'contains';
         let matched = false;
@@ -214,20 +269,17 @@ async function handleCommentEvent(accountId: string, change: any, eventId?: stri
 
         if (matched) {
             console.log(`[IG Service] Workflow ${workflow.title} MATCHED! Executing...`);
-            // Execute
             await runWorkflowActions(workflow, account, fromId, eventId || 'inline', commentId);
         }
     }
 }
-
-
 
 async function handleDmEvent(accountId: string, event: any, eventId?: string) {
     const senderId = event.sender.id;
     const recipientId = event.recipient.id;
     const message = event.message;
 
-    if (message.is_echo) return; // Ignore echoes
+    if (message.is_echo) return;
 
     const text = message.text || "";
     const isStoryReply = !!(event.message.reply_to && event.message.reply_to.story);
@@ -235,75 +287,7 @@ async function handleDmEvent(accountId: string, event: any, eventId?: string) {
 
     console.log(`[IG Service] Handling DM. isStoryReply=${isStoryReply}, targetTriggerType=${targetTriggerType}, text="${text}"`);
 
-    // 1. Find the connected account (Recipient)
-    // igUserId should match recipientId (Business ID)
-    let account = await prisma.instagramAccount.findFirst({
-        where: { igUserId: recipientId },
-        include: { workspace: true }
-    });
-
-    if (!account) {
-        console.warn(`[IG Service] Account not found directly for recipientId: ${recipientId}. Attempting resolution via tokens...`);
-
-        // Self-Healing
-        const allAccounts = await prisma.instagramAccount.findMany({
-            where: { status: 'CONNECTED' }
-        });
-
-        let foundAccount = null;
-
-        for (const acc of allAccounts) {
-            try {
-                const token = decrypt(acc.accessTokenEncrypted).trim();
-
-                // Strategy 1: Check via Instagram Graph API
-                let checkUrl = `https://graph.instagram.com/v21.0/${recipientId}?fields=id,username&access_token=${token}`;
-                let res = await fetch(checkUrl);
-                let data = await res.json();
-
-                if (!res.ok) {
-                    // Strategy 2: Check via Facebook Graph API (in case ID is only valid there)
-                    checkUrl = `https://graph.facebook.com/v21.0/${recipientId}?fields=id,username&access_token=${token}`;
-                    res = await fetch(checkUrl);
-                    data = await res.json();
-                }
-
-                if (res.ok && data.username) {
-                    // We found the username associated with this mysterious ID using this token.
-                    // Does it match the account's localized username?
-                    // Or does it imply this token HAS access to this ID?
-
-                    // IF the token successfully fetched the ID, it implies "Access".
-                    // BUT we should verify if it's the SAME account to be safe.
-                    // Compare usernames (case insensitive)
-                    if (data.username.toLowerCase() === acc.username.toLowerCase()) {
-                        console.log(`[IG Service] ✅ Match found! Token for ${acc.username} resolved ${recipientId}. Updating DB...`);
-
-                        foundAccount = await prisma.instagramAccount.update({
-                            where: { id: acc.id },
-                            data: {
-                                igUserId: recipientId, // Update to the Business ID
-                                username: data.username // Sync username
-                            }
-                        });
-                        break;
-                    } else {
-                        console.log(`[IG Service] ⚠️ Token for ${acc.username} can see ${recipientId} (${data.username}), but usernames mismatch. Ignoring.`);
-                    }
-                }
-            } catch (ignore) {
-                console.error("Error in loop", ignore);
-            }
-        }
-
-        if (foundAccount) {
-            // @ts-ignore
-            account = await prisma.instagramAccount.findUnique({
-                where: { id: foundAccount.id },
-                include: { workspace: true }
-            });
-        }
-    }
+    const account = await findAccountByInstagramId(recipientId);
 
     if (!account) {
         console.error(`[IG Service] STOP: No account found for DM. Recipient: ${recipientId}`);
@@ -312,10 +296,8 @@ async function handleDmEvent(accountId: string, event: any, eventId?: string) {
 
     console.log(`[IG Service] Account identified: ${account.username} (ID: ${account.igUserId})`);
 
-    // 2. Upsert Contact
     await upsertContact(account, senderId);
 
-    // 3. Find Workflows
     const workflows = await prisma.workflow.findMany({
         where: {
             workspaceId: account.workspaceId,
@@ -335,23 +317,16 @@ async function handleDmEvent(accountId: string, event: any, eventId?: string) {
 
     console.log(`[IG Service] Found ${workflows.length} active workflows for ${targetTriggerType}`);
 
-    // 4. Match Triggers
     for (const workflow of workflows) {
         const trigger = workflow.triggers.find(t => t.type === targetTriggerType);
-        if (!trigger) {
-            console.log(`[IG Service] Trigger of type ${targetTriggerType} not found in workflow ${workflow.title}`);
-            continue;
-        }
+        if (!trigger) continue;
 
         const config = trigger.configJson as any;
-        const keywords = config.keywords; // string[]
+        const keywords = config.keywords;
         const matchMode = config.matchMode || "contains";
-
-        console.log(`[IG Service] Checking workflow "${workflow.title}". Keywords: ${JSON.stringify(keywords)}, Mode: ${matchMode}`);
 
         let matched = false;
 
-        // If no keywords, match everything
         if (!keywords || keywords.length === 0) {
             matched = true;
         } else {
@@ -364,32 +339,52 @@ async function handleDmEvent(accountId: string, event: any, eventId?: string) {
         }
 
         if (matched) {
-            // Execute Actions
             await runWorkflowActions(workflow, account, senderId, eventId || 'temporary-id');
         }
     }
-
 }
 
-
 async function runWorkflowActions(workflow: any, account: any, recipientId: string, webhookEventId: string, commentId?: string) {
-    const run = await prisma.automationRun.create({
-        data: {
-            workflowId: workflow.id,
-            webhookEventId: webhookEventId,
-            status: "RUNNING"
+    let validEventId = webhookEventId;
+
+    const isInline = webhookEventId.startsWith('inline-');
+    if (isInline) {
+        try {
+            // Try creating a dummy event if needed to satisfy FK
+            // Note: Ideally we pass the real event ID from processInstagramEvent
+            /* 
+            const dummy = await prisma.webhookEvent.create({ ... });
+            validEventId = dummy.id; 
+            */
+            // Assuming now processInstagramEvent handles creation properly before calling job
+        } catch (e) {
+            console.error("Failed handling inline event ID", e);
         }
-    });
+    }
+
+    // Try/Catch creation to be safe vs FK constraint
+    let run;
+    try {
+        run = await prisma.automationRun.create({
+            data: {
+                workflowId: workflow.id,
+                webhookEventId: validEventId,
+                status: "RUNNING"
+            }
+        });
+    } catch (e: any) {
+        console.error("Error creating AutomationRun (likely invalid webhookEventId FK)", e);
+        // If we fail specifically on FK, we might want to try creating a dummy event?
+        // But for now, just log and abort execution to prevent crash loop.
+        return;
+    }
 
     try {
         console.log(`[IG Service] Starting Graph Execution for workflow: ${workflow.title}`);
 
-        // Start from the trigger node that would have matched
         const flow = workflow.flowDefinition as any;
         if (!flow || !flow.nodes) throw new Error("Flow definition missing");
 
-        // Simple: Find the trigger node to start from
-        // Note: For now we just find any trigger node, but ideally we'd pass the specific ID
         const triggerNode = flow.nodes.find((n: any) =>
             n.type === 'trigger' || n.type === 'trigger_comment' || n.type === 'trigger_mention'
         );
@@ -400,14 +395,16 @@ async function runWorkflowActions(workflow: any, account: any, recipientId: stri
 
     } catch (e: any) {
         console.error("Error executing workflow", e);
-        await prisma.automationRun.update({
-            where: { id: run.id },
-            data: {
-                status: "ERROR",
-                finishedAt: new Date(),
-                errorMessage: e.message
-            }
-        });
+        if (run) {
+            await prisma.automationRun.update({
+                where: { id: run.id },
+                data: {
+                    status: "ERROR",
+                    finishedAt: new Date(),
+                    errorMessage: e.message
+                }
+            });
+        }
     }
 }
 
@@ -470,6 +467,7 @@ async function executeWorkflowNode(workflow: any, account: any, recipientId: str
                 create: {
                     workspaceId: account.workspaceId,
                     instagramId: recipientId,
+                    fullName: `User ${recipientId}`,
                     tags: newTags,
                     lastInteraction: new Date()
                 },
@@ -516,7 +514,6 @@ async function sendDm(account: any, recipientId: string, text: string, buttons?:
     let body;
 
     if (imageUrl) {
-        // Generic Template for Image + Text + Buttons
         body = {
             recipient: { id: recipientId },
             message: {
@@ -526,7 +523,7 @@ async function sendDm(account: any, recipientId: string, text: string, buttons?:
                         template_type: "generic",
                         elements: [
                             {
-                                title: text || " ", // Title is required for generic template
+                                title: text || " ",
                                 image_url: imageUrl,
                                 buttons: buttons && buttons.length > 0 ? buttons.slice(0, 3).map(b => ({
                                     type: "web_url",
@@ -547,9 +544,9 @@ async function sendDm(account: any, recipientId: string, text: string, buttons?:
                     type: "template",
                     payload: {
                         template_type: "button",
-                        text: text, // Button template text (max 640 chars)
+                        text: text,
                         buttons: buttons.map(b => ({
-                            type: "web_url", // Currently strictly web_url based on UI
+                            type: "web_url",
                             url: b.url,
                             title: b.label
                         }))
@@ -607,7 +604,6 @@ async function sendPrivateReply(account: any, commentId: string, text: string, b
             }
         };
     } else if (buttons && buttons.length > 0) {
-        // Attempting Button Template for Private Reply
         body = {
             recipient: { comment_id: commentId },
             message: {
@@ -637,8 +633,6 @@ async function sendPrivateReply(account: any, commentId: string, text: string, b
 
     if (!res.ok) {
         console.error("[IG Service] Private Reply Failed:", JSON.stringify(data));
-        // If the error implies attachment not supported, we could retry with text only?
-        // But for now, throw.
         throw new Error(`Failed to send Private Reply: ${JSON.stringify(data)}`);
     }
     return data;
@@ -666,7 +660,6 @@ async function replyToComment(account: any, commentId: string, text: string) {
 export async function resumeWorkflowFromJob(data: any) {
     console.log(`[Worker] Resuming workflow run ${data.runId} at node ${data.nodeId}`);
 
-    // 1. Fetch Workflow & Account
     const workflow = await prisma.workflow.findUnique({
         where: { id: data.workflowId },
         include: { triggers: true, actions: true }
@@ -686,7 +679,5 @@ export async function resumeWorkflowFromJob(data: any) {
         return;
     }
 
-    // 2. Call executeWorkflowNode
     await executeWorkflowNode(workflow, account, data.senderId, data.nodeId, data.runId, data.commentId);
 }
-
