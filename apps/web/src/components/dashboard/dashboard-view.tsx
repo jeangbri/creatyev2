@@ -1,7 +1,7 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, Activity, MessageSquare } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Zap, Activity, MessageSquare, TrendingUp, ArrowUpRight } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
 
 interface DashboardViewProps {
@@ -15,69 +15,116 @@ export function DashboardView({ stats }: DashboardViewProps) {
     const { t } = useLanguage();
     const { workflowsCount, runsCount } = stats;
 
-    return (
-        <div className="space-y-6">
-            <h2 className="text-3xl font-bold tracking-tight">{t('dashboard.title')}</h2>
+    const statCards = [
+        {
+            label: t('dashboard.activeAutomations'),
+            value: workflowsCount,
+            icon: Zap,
+            iconBg: "bg-amber-50",
+            iconColor: "text-amber-600",
+            accentBorder: "border-l-amber-400",
+            trend: null,
+        },
+        {
+            label: t('dashboard.totalExecutions'),
+            value: runsCount,
+            icon: Activity,
+            iconBg: "bg-emerald-50",
+            iconColor: "text-emerald-600",
+            accentBorder: "border-l-emerald-400",
+            trend: t('dashboard.sinceStart'),
+        },
+        {
+            label: t('dashboard.sentResponses'),
+            value: runsCount,
+            icon: MessageSquare,
+            iconBg: "bg-blue-50",
+            iconColor: "text-blue-600",
+            accentBorder: "border-l-blue-400",
+            trend: null,
+        },
+    ];
 
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            {t('dashboard.activeAutomations')}
-                        </CardTitle>
-                        <Zap className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{workflowsCount}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            {t('dashboard.totalExecutions')}
-                        </CardTitle>
-                        <Activity className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{runsCount}</div>
-                        <p className="text-xs text-muted-foreground">
-                            {t('dashboard.sinceStart')}
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            {t('dashboard.sentResponses')}
-                        </CardTitle>
-                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{runsCount}</div>
-                    </CardContent>
-                </Card>
+    return (
+        <div className="space-y-8">
+            {/* Header */}
+            <div className="flex items-end justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                        {t('dashboard.title')}
+                    </h1>
+                    <p className="mt-1 text-sm text-slate-500">
+                        Acompanhe o desempenho das suas automações em tempo real.
+                    </p>
+                </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-4">
-                    <CardHeader>
-                        <CardTitle>{t('dashboard.title')}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pl-2">
-                        <div className="h-[200px] flex items-center justify-center text-muted-foreground">
-                            {t('dashboard.graphPlaceholder')}
+            {/* Stats Grid */}
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {statCards.map((card, i) => (
+                    <Card key={i} className={`relative overflow-hidden border-l-4 ${card.accentBorder} bg-white shadow-sm hover:shadow-md transition-shadow duration-300`}>
+                        <CardContent className="p-5">
+                            <div className="flex items-start justify-between">
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-slate-500">{card.label}</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-3xl font-bold text-slate-900 tabular-nums">
+                                            {card.value.toLocaleString('pt-BR')}
+                                        </span>
+                                    </div>
+                                    {card.trend && (
+                                        <p className="flex items-center gap-1 text-xs text-slate-400 font-medium">
+                                            <TrendingUp className="w-3 h-3" />
+                                            {card.trend}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${card.iconBg}`}>
+                                    <card.icon className={`w-5 h-5 ${card.iconColor}`} />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+
+            {/* Bottom Section */}
+            <div className="grid gap-5 lg:grid-cols-7">
+                {/* Chart Area */}
+                <Card className="lg:col-span-4 bg-white shadow-sm overflow-hidden">
+                    <div className="p-6 pb-3 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-base font-semibold text-slate-900">Visão Geral</h3>
+                            <p className="text-xs text-slate-400 mt-0.5">Últimos 7 dias</p>
                         </div>
-                    </CardContent>
+                        <button className="text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1">
+                            Ver detalhes <ArrowUpRight className="w-3 h-3" />
+                        </button>
+                    </div>
+                    <div className="px-6 pb-6">
+                        <div className="h-[200px] flex items-center justify-center rounded-xl bg-slate-50 border border-dashed border-slate-200">
+                            <div className="text-center">
+                                <Activity className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                <p className="text-sm text-slate-400 font-medium">{t('dashboard.graphPlaceholder')}</p>
+                            </div>
+                        </div>
+                    </div>
                 </Card>
-                <Card className="col-span-3">
-                    <CardHeader>
-                        <CardTitle>{t('dashboard.recentActivity')}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-sm text-muted-foreground">
-                            {t('dashboard.noActivity')}
+
+                {/* Recent Activity */}
+                <Card className="lg:col-span-3 bg-white shadow-sm overflow-hidden">
+                    <div className="p-6 pb-3">
+                        <h3 className="text-base font-semibold text-slate-900">{t('dashboard.recentActivity')}</h3>
+                        <p className="text-xs text-slate-400 mt-0.5">Atividade recente</p>
+                    </div>
+                    <div className="px-6 pb-6">
+                        <div className="h-[200px] flex items-center justify-center rounded-xl bg-slate-50 border border-dashed border-slate-200">
+                            <div className="text-center">
+                                <MessageSquare className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                <p className="text-sm text-slate-400 font-medium">{t('dashboard.noActivity')}</p>
+                            </div>
                         </div>
-                    </CardContent>
+                    </div>
                 </Card>
             </div>
         </div>

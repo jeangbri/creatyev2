@@ -3,10 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ptBR, enUS } from "date-fns/locale";
-import { Trash2 } from "lucide-react";
+import { Trash2, Zap, Clock, Radio, MoreVertical } from "lucide-react";
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -55,50 +54,73 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
 
     const updatedAt = new Date(workflow.updatedAt);
     const dateLocale = language === 'pt' ? ptBR : enUS;
-
-    // Helper to format date consistent with locale
     const dateFormat = language === 'pt' ? "d 'de' MMMM 'às' HH:mm" : "MMMM d 'at' h:mm a";
 
     return (
-        <Card className="hover:shadow-md transition-shadow cursor-pointer relative group overflow-hidden">
-            <Link href={`/workflows/${workflow.id}/editor`} className="block h-full">
-                <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg truncate pr-8">{workflow.title}</CardTitle>
-                        <div
-                            className={`w-3 h-3 min-w-[12px] rounded-full ${workflow.isActive ? 'bg-green-500' : 'bg-gray-300'}`}
-                            title={workflow.isActive ? t('workflows.card.active') : t('workflows.card.inactive')}
-                        />
+        <div className="group relative bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-lg hover:border-slate-200 transition-all duration-300 overflow-hidden">
+            <Link href={`/workflows/${workflow.id}/editor`} className="block p-5">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center">
+                            <Zap className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div className="min-w-0">
+                            <h3 className="text-sm font-semibold text-slate-900 truncate">
+                                {workflow.title}
+                            </h3>
+                            <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">
+                                {workflow.description || t('workflows.card.noDescription')}
+                            </p>
+                        </div>
                     </div>
-                    <CardDescription className="line-clamp-2 min-h-[40px]">
-                        {workflow.description || t('workflows.card.noDescription')}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-xs text-muted-foreground space-y-1">
-                        <p>
-                            {t('workflows.card.channels')} {Array.isArray(workflow.channels)
-                                ? workflow.channels.join(', ')
-                                : JSON.parse(JSON.stringify(workflow.channels)).join(', ')}
-                        </p>
-                        <p>{t('workflows.card.executions')} {workflow.runCount}</p>
-                        <p>
-                            {t('workflows.card.updatedAt')} {format(updatedAt, dateFormat, { locale: dateLocale })}
-                        </p>
+
+                    {/* Status Badge */}
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex-shrink-0 ${workflow.isActive
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-slate-100 text-slate-500'
+                        }`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${workflow.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                            }`} />
+                        {workflow.isActive ? t('workflows.card.active') : t('workflows.card.inactive')}
                     </div>
-                </CardContent>
+                </div>
+
+                {/* Divider */}
+                <div className="h-px bg-slate-100 my-3" />
+
+                {/* Meta Info */}
+                <div className="flex items-center gap-4 text-xs text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                        <Radio className="w-3 h-3" />
+                        {Array.isArray(workflow.channels)
+                            ? workflow.channels.join(', ')
+                            : JSON.parse(JSON.stringify(workflow.channels)).join(', ')}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                        <Zap className="w-3 h-3" />
+                        {workflow.runCount} runs
+                    </span>
+                </div>
+
+                {/* Timestamp */}
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-2.5">
+                    <Clock className="w-3 h-3" />
+                    {format(updatedAt, dateFormat, { locale: dateLocale })}
+                </div>
             </Link>
 
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            {/* Delete Button */}
+            <div className="absolute top-4 right-14 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200"
                             onClick={(e: React.MouseEvent) => e.stopPropagation()}
                         >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent onClick={(e: React.MouseEvent) => e.stopPropagation()}>
@@ -123,6 +145,6 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                     </AlertDialogContent>
                 </AlertDialog>
             </div>
-        </Card>
+        </div>
     )
 }
