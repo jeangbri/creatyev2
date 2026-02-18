@@ -15,11 +15,9 @@ import {
     LayoutTemplate,
     LogOut,
     Settings,
-    ChevronRight
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/contexts/language-context'
 import { LanguageSwitcher } from '@/components/language-switcher'
 
@@ -33,30 +31,30 @@ export function Sidebar() {
         {
             title: t('sidebar.principal'),
             items: [
-                { label: t('sidebar.geral'), href: "/dashboard", icon: Home, color: "text-blue-500" },
+                { label: t('sidebar.geral'), href: "/dashboard", icon: Home },
             ]
         },
         {
             title: t('sidebar.automacoes'),
             items: [
-                { label: t('sidebar.automacoes'), href: "/workflows", icon: Zap, color: "text-amber-500" },
-                { label: t('sidebar.respostas'), href: "/responses", icon: MessageSquare, color: "text-emerald-500" },
+                { label: t('sidebar.automacoes'), href: "/workflows", icon: Zap },
+                { label: t('sidebar.respostas'), href: "/responses", icon: MessageSquare },
             ]
         },
         {
             title: t('sidebar.leads'),
             items: [
-                { label: t('sidebar.inbox'), href: "/inbox", icon: Inbox, color: "text-cyan-500" },
-                { label: t('sidebar.liveChat'), href: "/chat", icon: MessageCircle, color: "text-pink-500" },
-                { label: t('sidebar.ranking'), href: "/ranking", icon: Trophy, color: "text-yellow-500" },
-                { label: t('sidebar.contatos'), href: "/contacts", icon: Users, color: "text-indigo-500" },
+                { label: t('sidebar.inbox'), href: "/inbox", icon: Inbox },
+                { label: t('sidebar.liveChat'), href: "/chat", icon: MessageCircle },
+                { label: t('sidebar.ranking'), href: "/ranking", icon: Trophy },
+                { label: t('sidebar.contatos'), href: "/contacts", icon: Users },
             ]
         },
         {
             title: t('sidebar.comunidade'),
             items: [
-                { label: t('sidebar.explorar'), href: "/explore", icon: Compass, color: "text-teal-500" },
-                { label: t('sidebar.meusTemplates'), href: "/templates", icon: LayoutTemplate, color: "text-orange-500" },
+                { label: t('sidebar.explorar'), href: "/explore", icon: Compass },
+                { label: t('sidebar.meusTemplates'), href: "/templates", icon: LayoutTemplate },
             ]
         }
     ]
@@ -68,110 +66,94 @@ export function Sidebar() {
     }
 
     return (
-        <div className="flex h-screen w-64 flex-col bg-slate-950 text-white border-r border-white/[0.06] relative overflow-hidden">
-            {/* Subtle gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-cyan-950/20 via-transparent to-indigo-950/20 pointer-events-none" />
+        <aside className="flex h-screen w-[260px] flex-col border-r border-slate-200/80 bg-white">
 
-            {/* Logo Area */}
-            <div className="relative z-10 p-5 flex items-center justify-between border-b border-white/[0.06]">
-                <Link href="/dashboard" className="flex items-center gap-2 group">
+            {/* Logo */}
+            <div className="flex items-center justify-between px-5 h-16 border-b border-slate-100">
+                <Link href="/dashboard" className="flex items-center gap-2">
                     <img
                         src="https://i.imgur.com/Ntmpj8g.png"
-                        alt="Creatye Logo"
-                        className="h-8 w-auto object-contain transition-all duration-300 group-hover:brightness-125"
+                        alt="Creatye"
+                        className="h-7 w-auto object-contain"
                     />
                 </Link>
                 <LanguageSwitcher />
             </div>
 
-            {/* Navigation */}
-            <div className="relative z-10 flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-hide">
+            {/* Nav */}
+            <nav className="flex-1 overflow-y-auto py-5 px-3 space-y-7">
                 {sidebarItems.map((group, i) => (
                     <div key={i}>
-                        <h3 className="mb-2 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">
+                        <p className="px-3 mb-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                             {group.title}
-                        </h3>
-                        <div className="space-y-0.5">
+                        </p>
+                        <ul className="space-y-px">
                             {group.items.map((item) => {
                                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                                 return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className={cn(
-                                            "group/item flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 relative",
-                                            isActive
-                                                ? "bg-white/[0.08] text-white shadow-sm"
-                                                : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
-                                        )}
-                                    >
-                                        {/* Active indicator bar */}
-                                        {isActive && (
-                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-r-full" />
-                                        )}
-                                        <item.icon className={cn(
-                                            "h-[18px] w-[18px] transition-all duration-200 flex-shrink-0",
-                                            isActive ? item.color : "text-slate-500 group-hover/item:text-slate-300"
-                                        )} />
-                                        <span className="flex-1 truncate">{item.label}</span>
-                                        {isActive && (
-                                            <ChevronRight className="w-3.5 h-3.5 text-slate-500 opacity-60" />
-                                        )}
-                                    </Link>
+                                    <li key={item.href}>
+                                        <Link
+                                            href={item.href}
+                                            className={cn(
+                                                "flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-colors duration-150",
+                                                isActive
+                                                    ? "bg-slate-900 text-white"
+                                                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                                            )}
+                                        >
+                                            <item.icon className="h-4 w-4 flex-shrink-0" strokeWidth={isActive ? 2.2 : 1.8} />
+                                            {item.label}
+                                        </Link>
+                                    </li>
                                 )
                             })}
-                        </div>
+                        </ul>
                     </div>
                 ))}
 
                 {/* Settings */}
                 <div>
-                    <h3 className="mb-2 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">
+                    <p className="px-3 mb-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                         {t('sidebar.configuracoes')}
-                    </h3>
-                    <div className="space-y-0.5">
-                        <Link
-                            href="/settings/integracoes"
-                            className={cn(
-                                "group/item flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 relative",
-                                pathname.startsWith('/settings')
-                                    ? "bg-white/[0.08] text-white shadow-sm"
-                                    : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
-                            )}
-                        >
-                            {pathname.startsWith('/settings') && (
-                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-r-full" />
-                            )}
-                            <Settings className={cn(
-                                "h-[18px] w-[18px] transition-all duration-200 flex-shrink-0",
-                                pathname.startsWith('/settings') ? "text-slate-300" : "text-slate-500 group-hover/item:text-slate-300"
-                            )} />
-                            <span className="flex-1 truncate">{t('sidebar.integracoes')}</span>
-                        </Link>
-                    </div>
+                    </p>
+                    <ul className="space-y-px">
+                        <li>
+                            <Link
+                                href="/settings/integracoes"
+                                className={cn(
+                                    "flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-colors duration-150",
+                                    pathname.startsWith('/settings')
+                                        ? "bg-slate-900 text-white"
+                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                                )}
+                            >
+                                <Settings className="h-4 w-4 flex-shrink-0" strokeWidth={pathname.startsWith('/settings') ? 2.2 : 1.8} />
+                                {t('sidebar.integracoes')}
+                            </Link>
+                        </li>
+                    </ul>
                 </div>
-            </div>
+            </nav>
 
-            {/* Bottom Profile */}
-            <div className="relative z-10 border-t border-white/[0.06] p-3 space-y-2">
-                <div className="flex items-center gap-3 rounded-xl bg-white/[0.04] border border-white/[0.06] p-3 transition-colors hover:bg-white/[0.06] cursor-default">
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                        <Users className="h-4 w-4 text-white" />
+            {/* Footer */}
+            <div className="border-t border-slate-100 p-3 space-y-1">
+                <div className="flex items-center gap-3 rounded-lg px-3 py-2.5">
+                    <div className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-[11px] font-bold text-white tracking-tight">
+                        C
                     </div>
-                    <div className="flex-1 overflow-hidden">
-                        <p className="truncate text-sm font-semibold text-white">{t('sidebar.meuPerfil')}</p>
-                        <p className="truncate text-[11px] text-slate-500">{t('sidebar.configuracoes')}</p>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-slate-900 truncate">{t('sidebar.meuPerfil')}</p>
+                        <p className="text-[11px] text-slate-400 truncate">{t('sidebar.configuracoes')}</p>
                     </div>
                 </div>
-                <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-2.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl h-10 text-sm font-medium transition-all duration-200"
+                <button
                     onClick={handleLogout}
+                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors duration-150"
                 >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-4 w-4" strokeWidth={1.8} />
                     {t('sidebar.sair')}
-                </Button>
+                </button>
             </div>
-        </div>
+        </aside>
     )
 }

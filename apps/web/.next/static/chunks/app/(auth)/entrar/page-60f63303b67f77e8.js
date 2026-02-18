@@ -13,4 +13,4 @@
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
- */let s=(0,r(9318).Z)("Mail",[["rect",{width:"20",height:"16",x:"2",y:"4",rx:"2",key:"18n3k1"}],["path",{d:"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7",key:"1ocrg3"}]])},980:function(e,t,r){"use strict";r.d(t,{default:function(){return a.a}});var s=r(949),a=r.n(s)}},function(e){e.O(0,[740,949,628,551,202,836,852,999,744],function(){return e(e.s=2554)}),_N_E=e.O()}]);
+ */let s=(0,r(9318).Z)("Mail",[["rect",{width:"20",height:"16",x:"2",y:"4",rx:"2",key:"18n3k1"}],["path",{d:"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7",key:"1ocrg3"}]])},980:function(e,t,r){"use strict";r.d(t,{default:function(){return a.a}});var s=r(949),a=r.n(s)}},function(e){e.O(0,[949,245,628,883,202,836,852,999,744],function(){return e(e.s=2554)}),_N_E=e.O()}]);
