@@ -283,9 +283,8 @@ async function handleDmEvent(accountId: string, event: any, eventId?: string) {
 
     const text = message.text || "";
     const isStoryReply = !!(event.message.reply_to && event.message.reply_to.story);
-    const targetTriggerType = isStoryReply ? "STORY_REPLY" : "DM_RECEIVED";
 
-    console.log(`[IG Service] Handling DM. isStoryReply=${isStoryReply}, targetTriggerType=${targetTriggerType}, text="${text}"`);
+    console.log(`[IG Service] Handling DM. isStoryReply=${isStoryReply}, text="${text}"`);
 
     const account = await findAccountByInstagramId(recipientId);
 
@@ -298,6 +297,13 @@ async function handleDmEvent(accountId: string, event: any, eventId?: string) {
 
     await upsertContact(account, senderId);
 
+    // For story replies, search for BOTH STORY_REPLY and DM_RECEIVED triggers.
+    // The flow editor's trigger node defaults to DM_RECEIVED even for story-based workflows,
+    // so we need to match both to avoid missing automations.
+    const triggerTypes = isStoryReply
+        ? ["STORY_REPLY", "DM_RECEIVED"]
+        : ["DM_RECEIVED"];
+
     const workflows = await prisma.workflow.findMany({
         where: {
             workspaceId: account.workspaceId,
@@ -305,7 +311,7 @@ async function handleDmEvent(accountId: string, event: any, eventId?: string) {
             status: "PUBLISHED",
             triggers: {
                 some: {
-                    type: targetTriggerType
+                    type: { in: triggerTypes }
                 }
             }
         },
@@ -315,10 +321,13 @@ async function handleDmEvent(accountId: string, event: any, eventId?: string) {
         }
     });
 
-    console.log(`[IG Service] Found ${workflows.length} active workflows for ${targetTriggerType}`);
+    console.log(`[IG Service] Found ${workflows.length} active workflows for types: [${triggerTypes.join(', ')}]`);
 
     for (const workflow of workflows) {
-        const trigger = workflow.triggers.find(t => t.type === targetTriggerType);
+        // Find the best matching trigger (prefer STORY_REPLY over DM_RECEIVED for story replies)
+        const trigger = isStoryReply
+            ? (workflow.triggers.find(t => t.type === "STORY_REPLY") || workflow.triggers.find(t => t.type === "DM_RECEIVED"))
+            : workflow.triggers.find(t => t.type === "DM_RECEIVED");
         if (!trigger) continue;
 
         const config = trigger.configJson as any;
@@ -339,6 +348,7 @@ async function handleDmEvent(accountId: string, event: any, eventId?: string) {
         }
 
         if (matched) {
+            console.log(`[IG Service] Workflow "${workflow.title}" MATCHED via trigger type "${trigger.type}"! Executing...`);
             await runWorkflowActions(workflow, account, senderId, eventId || 'temporary-id');
         }
     }
