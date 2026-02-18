@@ -17,7 +17,8 @@ import {
     Menu,
     X,
     Cpu,
-    Sparkles
+    Sparkles,
+    Bot
 } from 'lucide-react'
 
 // --- Utility Components ---
