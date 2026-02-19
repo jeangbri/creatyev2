@@ -27,7 +27,7 @@ export default async function DashboardPage() {
             }
         });
 
-        return <DashboardView stats={{ workflowsCount, runsCount }} />;
+        return <div className="mx-auto max-w-6xl px-8 py-8"><DashboardView stats={{ workflowsCount, runsCount }} /></div>;
 
     } catch (error: any) {
         console.error("Dashboard Error:", error);
