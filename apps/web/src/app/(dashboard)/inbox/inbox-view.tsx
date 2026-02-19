@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react';
-import { Inbox, CheckCircle2, XCircle, Clock, Search, Zap, Filter, User } from 'lucide-react';
+import { Inbox, CheckCircle2, XCircle, Clock, Search, Zap, Filter, User, MessageSquare } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -26,6 +26,7 @@ interface Run {
     eventType: string;
     receivedAt: string;
     payload: any;
+    messageText?: string;
     contact?: {
         name?: string | null;
         username?: string | null;
@@ -231,10 +232,31 @@ export function InboxView({ runs, workflows = [] }: InboxViewProps) {
                                 )}
 
                                 <div>
-                                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Payload</p>
-                                    <pre className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-[11px] text-slate-600 font-mono overflow-auto max-h-[300px]">
-                                        {JSON.stringify(selected.payload, null, 2)}
-                                    </pre>
+                                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Mensagem</p>
+                                    <div className="rounded-lg bg-slate-50 border border-slate-200 p-4">
+                                        <div className="flex gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-slate-400 overflow-hidden">
+                                                {selected.contact?.profilePicUrl ? (
+                                                    <img src={selected.contact.profilePicUrl} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User className="w-4 h-4" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-baseline justify-between mb-1">
+                                                    <span className="text-sm font-semibold text-slate-900">
+                                                        {selected.contact?.name || getSenderFromPayload(selected.payload)}
+                                                    </span>
+                                                    <span className="text-[11px] text-slate-400">
+                                                        {new Date(selected.receivedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[13px] text-slate-600 leading-relaxed whitespace-pre-wrap">
+                                                    {selected.messageText || 'Conteúdo não identificado'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         ) : (

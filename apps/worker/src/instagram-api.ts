@@ -123,3 +123,20 @@ export async function replyComment(accessToken: string, commentId: string, text:
         throw new Error(JSON.stringify(e.response?.data || e.message));
     }
 }
+
+export async function getUserProfile(accessToken: string, userId: string) {
+    try {
+        const decryptedToken = decrypt(accessToken).trim();
+        const res = await axios.get(`${GRAPH_URL}/${userId}`, {
+            params: {
+                fields: 'name,username,profile_picture_url',
+                access_token: decryptedToken
+            }
+        });
+        return res.data;
+    } catch (e: any) {
+        // Silent fail for profile fetch (user might be private or ID not accessible)
+        console.warn('Get User Profile Warning', e.response?.data || e.message);
+        return null;
+    }
+}

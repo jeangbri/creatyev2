@@ -1,5 +1,5 @@
 import { PrismaClient, WebhookEvent, Workflow, InstagramAccount } from '@repo/db';
-import { sendDM, replyComment, sendPrivateReply } from './instagram-api';
+import { sendDM, replyComment, sendPrivateReply, getUserProfile } from './instagram-api';
 import { parseTimeToMs } from './utils';
 import { instagramQueue } from './redis';
 
@@ -143,6 +143,8 @@ async function startWorkflowExecution(workflow: Workflow, account: InstagramAcco
         }
     });
 
+    await ensureContact(account, senderId);
+
     try {
         await executeWorkflowNode(workflow, account, senderId, nodeId, run.id, commentId);
 
@@ -226,21 +228,36 @@ async function executeWorkflowNode(workflow: any, account: any, senderId: string
         }
         else if (nextNode.type === 'tag') {
             const newTags = (nextNode.data?.tags || []) as string[];
-            // Update Follower Tags
-            await prisma.instagramFollower.upsert({
-                where: { igUserId_accountId: { igUserId: senderId, accountId: account.id } },
-                create: { igUserId: senderId, accountId: account.id, tags: newTags },
-                update: { tags: { set: newTags } } // Simple set for now
-            });
+            // Update Contact Tags
+            // Assuming Contact has tags field. If not, this needs schema change.
+            // Using update because ensureContact runs at start.
+            try {
+                await prisma.contact.update({
+                    where: {
+                        workspaceId_instagramId: {
+                            workspaceId: account.workspaceId,
+                            instagramId: senderId
+                        }
+                    },
+                    data: { tags: { set: newTags } }
+                });
+            } catch (e) {
+                console.error('Failed to update tags', e);
+            }
 
             await executeWorkflowNode(workflow, account, senderId, nextNode.id, runId, commentId);
         }
         else if (nextNode.type === 'condition') {
-            const follower = await prisma.instagramFollower.findUnique({
-                where: { igUserId_accountId: { igUserId: senderId, accountId: account.id } }
+            const contact = await prisma.contact.findUnique({
+                where: {
+                    workspaceId_instagramId: {
+                        workspaceId: account.workspaceId,
+                        instagramId: senderId
+                    }
+                }
             });
 
-            const currentTags = follower?.tags || [];
+            const currentTags = contact?.tags || [];
             const conditionTag = nextNode.data?.tag || '';
             // Note: Editor might use different data structure for conditions, 
             // we assume a simple 'if has tag' logic for now.
@@ -270,5 +287,58 @@ async function executeWorkflowNode(workflow: any, account: any, senderId: string
             where: { id: runId },
             data: { status: 'SUCCESS', finishedAt: new Date() }
         });
+    }
+}
+
+async function ensureContact(account: InstagramAccount, instagramId: string) {
+    try {
+        const existing = await prisma.contact.findUnique({
+            where: {
+                workspaceId_instagramId: {
+                    workspaceId: account.workspaceId,
+                    instagramId
+                }
+            }
+        });
+
+        if (existing) {
+            await prisma.contact.update({
+                where: { id: existing.id },
+                data: { lastInteraction: new Date() }
+            });
+            return;
+        }
+
+        // New Contact
+        const profile = await getUserProfile(account.accessTokenEncrypted, instagramId);
+
+        await prisma.contact.create({
+            data: {
+                workspaceId: account.workspaceId,
+                instagramId,
+                username: profile?.username || undefined,
+                fullName: profile?.name || undefined,
+                profilePicUrl: profile?.profile_picture_url || undefined,
+                lastInteraction: new Date()
+            }
+        });
+    } catch (e) {
+        console.error(`Failed to ensure contact ${instagramId}`, e);
+        try {
+            await prisma.contact.upsert({
+                where: {
+                    workspaceId_instagramId: {
+                        workspaceId: account.workspaceId,
+                        instagramId
+                    }
+                },
+                create: {
+                    workspaceId: account.workspaceId,
+                    instagramId,
+                    lastInteraction: new Date()
+                },
+                update: { lastInteraction: new Date() }
+            });
+        } catch { }
     }
 }

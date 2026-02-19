@@ -82,6 +82,18 @@ export default async function InboxPage({ searchParams }: { searchParams: { work
         // Fallback username from payload if available (common in comments)
         const payloadUsername = payload?.entry?.[0]?.changes?.[0]?.value?.from?.username;
 
+        // Extract message content
+        let messageText = '';
+        if (payload?.entry?.[0]?.messaging?.[0]?.message?.text) {
+            messageText = payload.entry[0].messaging[0].message.text;
+        } else if (payload?.entry?.[0]?.changes?.[0]?.value?.text) {
+            messageText = payload.entry[0].changes[0].value.text; // Comment text
+        } else if (payload?.entry?.[0]?.messaging?.[0]?.postback?.title) {
+            messageText = `[Botão] ${payload.entry[0].messaging[0].postback.title}`;
+        } else {
+            messageText = 'Conteúdo não identificado';
+        }
+
         return {
             id: r.id,
             status: r.status,
@@ -92,6 +104,7 @@ export default async function InboxPage({ searchParams }: { searchParams: { work
             eventType: r.webhookEvent.eventType,
             receivedAt: r.webhookEvent.receivedAt.toISOString(),
             payload: payload,
+            messageText: messageText,
             contact: {
                 name: contact?.fullName || contact?.username || payloadUsername || (igId ? `User ${igId.slice(-4)}` : 'Desconhecido'),
                 username: contact?.username || payloadUsername,
