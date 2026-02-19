@@ -109,6 +109,7 @@ export default function CreateWorkflowPage() {
     }
 
     return (
+
         <div className="max-w-2xl mx-auto space-y-6 mb-20">
             <div>
                 <h2 className="text-3xl font-bold tracking-tight">{t('createAutomation.title')}</h2>
@@ -266,5 +267,6 @@ export default function CreateWorkflowPage() {
                 </CardFooter>
             </Card>
         </div>
+
     )
 }

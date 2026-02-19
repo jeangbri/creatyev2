@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Instagram, RefreshCw, CheckCircle, LogOut } from 'lucide-react'
+import { Instagram, RefreshCw, CheckCircle, LogOut, AlertCircle, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -81,6 +81,7 @@ export default function IntegrationsPage() {
     }
 
     return (
+
         <div className="space-y-6">
             <div>
                 <h2 className="text-3xl font-bold tracking-tight">{t('integrations.title')}</h2>
@@ -109,6 +110,28 @@ export default function IntegrationsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
+                    <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50/50 p-4">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="mt-0.5 h-5 w-5 text-blue-600 shrink-0" />
+                            <div className="space-y-1">
+                                <p className="text-sm font-medium text-blue-900">
+                                    Requisito da API Oficial do Instagram
+                                </p>
+                                <p className="text-sm text-blue-700 leading-relaxed">
+                                    Para conectar sua conta, ela precisa ser do tipo <strong>Criador de Conteúdo</strong> ou <strong>Comercial (Business)</strong>. Contas pessoais não são suportadas pela API oficial.
+                                </p>
+                                <a
+                                    href="https://help.instagram.com/502981923235522"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-900 hover:underline mt-2 transition-colors"
+                                >
+                                    Ver instruções oficiais <ExternalLink className="h-3 w-3" />
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                     {loading ? (
                         <div className="h-20 animate-pulse bg-muted rounded-md" />
                     ) : account ? (
@@ -169,5 +192,6 @@ export default function IntegrationsPage() {
                 </CardFooter>
             </Card>
         </div>
+
     )
 }

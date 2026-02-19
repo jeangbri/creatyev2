@@ -17405,8 +17405,20 @@ async function middleware(request) {
         }
     });
     const { data: { user } } = await supabase.auth.getUser();
+    // Allow public access to landing page (/)
+    if (request.nextUrl.pathname === "/") {
+        return response;
+    }
     // Guard protected routes
-    if (!user && (request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/workflows") || request.nextUrl.pathname.startsWith("/settings"))) {
+    const protectedPrefixes = [
+        "/dashboard",
+        "/workflows",
+        "/settings",
+        "/responses",
+        "/inbox",
+        "/contacts"
+    ];
+    if (!user && protectedPrefixes.some((p)=>request.nextUrl.pathname.startsWith(p))) {
         const url = request.nextUrl.clone();
         url.pathname = "/entrar";
         return NextResponse.redirect(url);

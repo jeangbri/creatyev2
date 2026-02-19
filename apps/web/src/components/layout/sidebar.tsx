@@ -8,18 +8,14 @@ import {
     Zap,
     MessageSquare,
     Inbox,
-    MessageCircle,
-    Trophy,
     Users,
     Compass,
     LayoutTemplate,
-    HelpCircle,
     LogOut,
-    Settings
+    Settings,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/contexts/language-context'
 import { LanguageSwitcher } from '@/components/language-switcher'
 
@@ -47,8 +43,6 @@ export function Sidebar() {
             title: t('sidebar.leads'),
             items: [
                 { label: t('sidebar.inbox'), href: "/inbox", icon: Inbox },
-                { label: t('sidebar.liveChat'), href: "/chat", icon: MessageCircle },
-                { label: t('sidebar.ranking'), href: "/ranking", icon: Trophy },
                 { label: t('sidebar.contatos'), href: "/contacts", icon: Users },
             ]
         },
@@ -68,84 +62,94 @@ export function Sidebar() {
     }
 
     return (
-        <div className="flex h-screen w-64 flex-col border-r bg-card text-card-foreground">
-            <div className="p-6 flex items-center justify-between">
-                <Link href="/dashboard" className="block">
+        <aside className="flex h-screen w-[260px] flex-col border-r border-slate-200/80 bg-white">
+
+            {/* Logo */}
+            <div className="flex items-center justify-between px-5 h-16 border-b border-slate-100">
+                <Link href="/dashboard" className="flex items-center gap-2">
                     <img
                         src="https://i.imgur.com/Ntmpj8g.png"
-                        alt="Creatye Logo"
-                        className="h-8 w-auto object-contain transition-transform hover:scale-105"
+                        alt="Creatye"
+                        className="h-7 w-auto object-contain"
                     />
                 </Link>
                 <LanguageSwitcher />
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-2">
+            {/* Nav */}
+            <nav className="flex-1 overflow-y-auto py-5 px-3 space-y-7">
                 {sidebarItems.map((group, i) => (
-                    <div key={i} className="mb-6">
-                        <h3 className="mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div key={i}>
+                        <p className="px-3 mb-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                             {group.title}
-                        </h3>
-                        <div className="space-y-1">
+                        </p>
+                        <ul className="space-y-px">
                             {group.items.map((item) => {
                                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                                 return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className={cn(
-                                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                                            isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                                        )}
-                                    >
-                                        <item.icon className="h-4 w-4" />
-                                        {item.label}
-                                    </Link>
+                                    <li key={item.href}>
+                                        <Link
+                                            href={item.href}
+                                            className={cn(
+                                                "flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-colors duration-150",
+                                                isActive
+                                                    ? "bg-slate-900 text-white"
+                                                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                                            )}
+                                        >
+                                            <item.icon className="h-4 w-4 flex-shrink-0" strokeWidth={isActive ? 2.2 : 1.8} />
+                                            {item.label}
+                                        </Link>
+                                    </li>
                                 )
                             })}
-                        </div>
+                        </ul>
                     </div>
                 ))}
 
-                {/* Settings explicit link */}
-                <div className="mb-6">
-                    <h3 className="mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {/* Settings */}
+                <div>
+                    <p className="px-3 mb-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                         {t('sidebar.configuracoes')}
-                    </h3>
-                    <div className="space-y-1">
-                        <Link
-                            href="/settings/integracoes"
-                            className={cn(
-                                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                                pathname.startsWith('/settings') ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                            )}
-                        >
-                            <Settings className="h-4 w-4" />
-                            {t('sidebar.integracoes')}
-                        </Link>
-                    </div>
+                    </p>
+                    <ul className="space-y-px">
+                        <li>
+                            <Link
+                                href="/settings/integracoes"
+                                className={cn(
+                                    "flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-colors duration-150",
+                                    pathname.startsWith('/settings')
+                                        ? "bg-slate-900 text-white"
+                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                                )}
+                            >
+                                <Settings className="h-4 w-4 flex-shrink-0" strokeWidth={pathname.startsWith('/settings') ? 2.2 : 1.8} />
+                                {t('sidebar.integracoes')}
+                            </Link>
+                        </li>
+                    </ul>
                 </div>
-            </div>
+            </nav>
 
-            <div className="border-t p-4">
-                <div className="mb-4 flex items-center gap-3 rounded-md border bg-background p-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
-                        <Users className="h-4 w-4 text-primary" />
+            {/* Footer */}
+            <div className="border-t border-slate-100 p-3 space-y-1">
+                <div className="flex items-center gap-3 rounded-lg px-3 py-2.5">
+                    <div className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-[11px] font-bold text-white tracking-tight">
+                        C
                     </div>
-                    <div className="flex-1 overflow-hidden">
-                        <p className="truncate text-xs font-medium">{t('sidebar.meuPerfil')}</p>
-                        <p className="truncate text-xs text-muted-foreground">{t('sidebar.configuracoes')}</p>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-slate-900 truncate">{t('sidebar.meuPerfil')}</p>
+                        <p className="text-[11px] text-slate-400 truncate">{t('sidebar.configuracoes')}</p>
                     </div>
                 </div>
-                <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
+                <button
                     onClick={handleLogout}
+                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors duration-150"
                 >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-4 w-4" strokeWidth={1.8} />
                     {t('sidebar.sair')}
-                </Button>
+                </button>
             </div>
-        </div>
+        </aside>
     )
 }
