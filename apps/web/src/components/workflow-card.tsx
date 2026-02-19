@@ -72,7 +72,7 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                 </h3>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150" onClick={(e) => e.preventDefault()}>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150" onClick={(e) => e.stopPropagation()}>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button
