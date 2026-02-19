@@ -96,7 +96,7 @@ export default function IntegrationsPage() {
                             </div>
                             <div>
                                 <CardTitle>{t('integrations.instagram.title')}</CardTitle>
-                                <CardDescription>{t('integrations.instagram.description')}</CardDescription>
+
                             </div>
                         </div>
                         {account?.status === 'CONNECTED' ? (
