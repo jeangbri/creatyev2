@@ -8,8 +8,6 @@ import {
     Zap,
     MessageSquare,
     Inbox,
-    MessageCircle,
-    Trophy,
     Users,
     Compass,
     LayoutTemplate,
@@ -45,8 +43,6 @@ export function Sidebar() {
             title: t('sidebar.leads'),
             items: [
                 { label: t('sidebar.inbox'), href: "/inbox", icon: Inbox },
-                { label: t('sidebar.liveChat'), href: "/chat", icon: MessageCircle },
-                { label: t('sidebar.ranking'), href: "/ranking", icon: Trophy },
                 { label: t('sidebar.contatos'), href: "/contacts", icon: Users },
             ]
         },

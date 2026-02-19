@@ -17410,7 +17410,15 @@ async function middleware(request) {
         return response;
     }
     // Guard protected routes
-    if (!user && (request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/workflows") || request.nextUrl.pathname.startsWith("/settings"))) {
+    const protectedPrefixes = [
+        "/dashboard",
+        "/workflows",
+        "/settings",
+        "/responses",
+        "/inbox",
+        "/contacts"
+    ];
+    if (!user && protectedPrefixes.some((p)=>request.nextUrl.pathname.startsWith(p))) {
         const url = request.nextUrl.clone();
         url.pathname = "/entrar";
         return NextResponse.redirect(url);
