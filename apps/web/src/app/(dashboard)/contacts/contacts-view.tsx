@@ -1,10 +1,18 @@
 "use client"
 
 import { useState } from 'react';
-import { Users, Search, ExternalLink, Instagram } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Users, Search, ExternalLink, Instagram, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 interface Contact {
     id: string;
@@ -23,10 +31,25 @@ interface Contact {
 
 interface ContactsViewProps {
     contacts: Contact[];
+    workflows?: { id: string; title: string }[];
 }
 
-export function ContactsView({ contacts }: ContactsViewProps) {
+export function ContactsView({ contacts, workflows = [] }: ContactsViewProps) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [search, setSearch] = useState('');
+
+    const currentFilter = searchParams.get('workflowId') || 'all';
+
+    const handleFilterChange = (workflowId: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (workflowId === 'all') {
+            params.delete('workflowId');
+        } else {
+            params.set('workflowId', workflowId);
+        }
+        router.push(`/contacts?${params.toString()}`);
+    };
 
     const filtered = contacts.filter(c =>
         (c.username || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -56,15 +79,35 @@ export function ContactsView({ contacts }: ContactsViewProps) {
                 </div>
             ) : (
                 <>
-                    {/* Search */}
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                        <Input
-                            placeholder="Buscar contatos..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="pl-9 h-9 text-[13px] rounded-lg border-slate-200 bg-white"
-                        />
+                    {/* Search and Filter */}
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                            <Input
+                                placeholder="Buscar contatos..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-9 h-9 text-[13px] rounded-lg border-slate-200 bg-white"
+                            />
+                        </div>
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="icon" className={`h-9 w-9 shrink-0 ${currentFilter !== 'all' ? 'text-blue-600 border-blue-200 bg-blue-50' : 'text-slate-400 border-slate-200'}`}>
+                                    <Filter className="w-4 h-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuItem onClick={() => handleFilterChange('all')}>
+                                    Todos os contatos
+                                </DropdownMenuItem>
+                                {workflows?.map(wf => (
+                                    <DropdownMenuItem key={wf.id} onClick={() => handleFilterChange(wf.id)} className={currentFilter === wf.id ? 'bg-slate-50 font-medium' : ''}>
+                                        {wf.title}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
 
                     {/* Table */}
@@ -119,8 +162,8 @@ export function ContactsView({ contacts }: ContactsViewProps) {
                                         </td>
                                         <td className="px-4 py-3 hidden md:table-cell">
                                             <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md ${contact.isFollowing
-                                                    ? 'bg-emerald-50 text-emerald-600'
-                                                    : 'bg-slate-50 text-slate-400'
+                                                ? 'bg-emerald-50 text-emerald-600'
+                                                : 'bg-slate-50 text-slate-400'
                                                 }`}>
                                                 {contact.isFollowing ? 'Seguindo' : 'Não segue'}
                                             </span>
