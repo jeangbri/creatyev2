@@ -24,5 +24,5 @@ export default async function ResponsesPage() {
         updatedAt: t.updatedAt.toISOString(),
     }));
 
-    return <div className="mx-auto max-w-6xl px-8 py-8"><ResponsesView templates={serialized} /></div>;
+    return <ResponsesView templates={serialized} />;
 }

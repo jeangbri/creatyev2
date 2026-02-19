@@ -109,164 +109,164 @@ export default function CreateWorkflowPage() {
     }
 
     return (
-        <div className="mx-auto max-w-6xl px-8 py-8">
-            <div className="max-w-2xl mx-auto space-y-6 mb-20">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight">{t('createAutomation.title')}</h2>
-                    <p className="text-muted-foreground">{t('createAutomation.subtitle')}</p>
-                </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{t('createAutomation.basicInfo')}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="title">{t('createAutomation.fieldTitle')}</Label>
-                            <Input
-                                id="title"
-                                placeholder={t('createAutomation.placeholderTitle')}
-                                value={title}
-                                onChange={e => setTitle(e.target.value)}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="desc">{t('createAutomation.fieldDescription')}</Label>
-                            <Input
-                                id="desc"
-                                placeholder={t('createAutomation.placeholderDescription')}
-                                value={description}
-                                onChange={e => setDescription(e.target.value)}
-                            />
-                        </div>
+        <div className="max-w-2xl mx-auto space-y-6 mb-20">
+            <div>
+                <h2 className="text-3xl font-bold tracking-tight">{t('createAutomation.title')}</h2>
+                <p className="text-muted-foreground">{t('createAutomation.subtitle')}</p>
+            </div>
 
-                        <div className="space-y-3 pt-4 border-t">
-                            <Label className="text-base">{t('createAutomation.whereToRun')}</Label>
-                            <div className="grid gap-3">
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t('createAutomation.basicInfo')}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="title">{t('createAutomation.fieldTitle')}</Label>
+                        <Input
+                            id="title"
+                            placeholder={t('createAutomation.placeholderTitle')}
+                            value={title}
+                            onChange={e => setTitle(e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="desc">{t('createAutomation.fieldDescription')}</Label>
+                        <Input
+                            id="desc"
+                            placeholder={t('createAutomation.placeholderDescription')}
+                            value={description}
+                            onChange={e => setDescription(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="space-y-3 pt-4 border-t">
+                        <Label className="text-base">{t('createAutomation.whereToRun')}</Label>
+                        <div className="grid gap-3">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="dm" checked={channels.dm} onCheckedChange={(c) => setChannels(p => ({ ...p, dm: c as boolean }))} />
+                                <Label htmlFor="dm">{t('createAutomation.channelDm')}</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="story" checked={channels.story} onCheckedChange={(c) => setChannels(p => ({ ...p, story: c as boolean }))} />
+                                <Label htmlFor="story">{t('createAutomation.channelStory')}</Label>
+                            </div>
+
+                            {/* Feed Logic */}
+                            <div className="flex flex-col space-y-2 p-3 border rounded-md bg-muted/10">
                                 <div className="flex items-center space-x-2">
-                                    <Checkbox id="dm" checked={channels.dm} onCheckedChange={(c) => setChannels(p => ({ ...p, dm: c as boolean }))} />
-                                    <Label htmlFor="dm">{t('createAutomation.channelDm')}</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="story" checked={channels.story} onCheckedChange={(c) => setChannels(p => ({ ...p, story: c as boolean }))} />
-                                    <Label htmlFor="story">{t('createAutomation.channelStory')}</Label>
+                                    <Checkbox id="feed" checked={channels.feed} onCheckedChange={(c) => setChannels(p => ({ ...p, feed: c as boolean }))} />
+                                    <Label htmlFor="feed" className="font-medium">{t('createAutomation.channelFeed')}</Label>
                                 </div>
 
-                                {/* Feed Logic */}
-                                <div className="flex flex-col space-y-2 p-3 border rounded-md bg-muted/10">
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox id="feed" checked={channels.feed} onCheckedChange={(c) => setChannels(p => ({ ...p, feed: c as boolean }))} />
-                                        <Label htmlFor="feed" className="font-medium">{t('createAutomation.channelFeed')}</Label>
-                                    </div>
-
-                                    {channels.feed && (
-                                        <div className="ml-6 space-y-3 mt-2 animate-in fade-in slide-in-from-top-2">
-                                            <div className="flex gap-4">
-                                                <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setFeedMode('all')}>
-                                                    <div className={`w-4 h-4 rounded-full border ${feedMode === 'all' ? 'border-primary bg-primary' : 'border-muted-foreground'}`}></div>
-                                                    <Label className="cursor-pointer">{t('createAutomation.feedAnyPost')}</Label>
-                                                </div>
-                                                <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setFeedMode('specific')}>
-                                                    <div className={`w-4 h-4 rounded-full border ${feedMode === 'specific' ? 'border-primary bg-primary' : 'border-muted-foreground'}`}></div>
-                                                    <Label className="cursor-pointer">{t('createAutomation.feedSpecificPost')}</Label>
-                                                </div>
+                                {channels.feed && (
+                                    <div className="ml-6 space-y-3 mt-2 animate-in fade-in slide-in-from-top-2">
+                                        <div className="flex gap-4">
+                                            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setFeedMode('all')}>
+                                                <div className={`w-4 h-4 rounded-full border ${feedMode === 'all' ? 'border-primary bg-primary' : 'border-muted-foreground'}`}></div>
+                                                <Label className="cursor-pointer">{t('createAutomation.feedAnyPost')}</Label>
                                             </div>
-
-                                            {feedMode === 'specific' && (
-                                                <div className="space-y-2">
-                                                    {selectedPost ? (
-                                                        <div className="flex items-center gap-3 p-3 border rounded bg-background">
-                                                            {/* Thumbnail */}
-                                                            {selectedPost.thumbnail_url || selectedPost.url ? (
-                                                                <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden">
-                                                                    <img src={selectedPost.thumbnail_url || selectedPost.url} className="w-full h-full object-cover" alt="Post" onError={(e) => e.currentTarget.style.display = 'none'} />
-                                                                </div>
-                                                            ) : (
-                                                                <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs">IMG</div>
-                                                            )}
-                                                            <div className="flex-1 overflow-hidden">
-                                                                <p className="text-sm font-medium truncate">ID: {selectedPost.id}</p>
-                                                                <p className="text-xs text-muted-foreground truncate">{selectedPost.caption || t('createAutomation.noCaption')}</p>
-                                                            </div>
-                                                            <Button variant="ghost" size="sm" onClick={() => setSelectedPost(null)}>{t('createAutomation.changePost')}</Button>
-                                                        </div>
-                                                    ) : (
-                                                        <Button variant="outline" size="sm" onClick={() => setShowPostSelector(!showPostSelector)} className="w-full">
-                                                            {showPostSelector ? t('createAutomation.closeList') : t('createAutomation.selectPost')}
-                                                        </Button>
-                                                    )}
-
-                                                    {/* Post Grid Selector */}
-                                                    {showPostSelector && !selectedPost && (
-                                                        <div className="border rounded-md p-2 bg-background">
-                                                            {loadingPosts ? (
-                                                                <p className="p-4 text-center text-sm text-muted-foreground">{t('createAutomation.loadingPosts')}</p>
-                                                            ) : (
-                                                                <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
-                                                                    {availablePosts.map(post => (
-                                                                        <div
-                                                                            key={post.id}
-                                                                            className="relative aspect-square bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity border rounded overflow-hidden"
-                                                                            onClick={() => {
-                                                                                setSelectedPost({
-                                                                                    id: post.id,
-                                                                                    url: post.media_url || post.thumbnail_url,
-                                                                                    caption: post.caption,
-                                                                                    thumbnail_url: post.thumbnail_url || post.media_url
-                                                                                });
-                                                                                setShowPostSelector(false);
-                                                                            }}
-                                                                        >
-                                                                            {(post.media_type === 'IMAGE' || post.media_type === 'CAROUSEL_ALBUM') && (
-                                                                                <img src={post.media_url} className="w-full h-full object-cover" />
-                                                                            )}
-                                                                            {post.media_type === 'VIDEO' && (
-                                                                                <img src={post.thumbnail_url} className="w-full h-full object-cover" />
-                                                                            )}
-                                                                        </div>
-                                                                    ))}
-                                                                    {availablePosts.length === 0 && (
-                                                                        <p className="col-span-3 text-center py-4 text-sm">{t('createAutomation.noPostsFound')}</p>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                            <div className="mt-2 text-xs text-muted-foreground text-center">
-                                                                {t('createAutomation.showingRecent')}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Fallback Manual Input */}
-                                                    {!selectedPost && !showPostSelector && (
-                                                        <div className="pt-2">
-                                                            <p className="text-xs text-muted-foreground mb-1">{t('createAutomation.manualInput')}</p>
-                                                            <Input
-                                                                placeholder={t('createAutomation.manualPlaceholder')}
-                                                                className="h-8 text-xs"
-                                                                onChange={(e) => {
-                                                                    if (e.target.value.length > 5) {
-                                                                        setSelectedPost({ id: e.target.value, url: '', caption: t('createAutomation.manualInputCaption') })
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
+                                            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setFeedMode('specific')}>
+                                                <div className={`w-4 h-4 rounded-full border ${feedMode === 'specific' ? 'border-primary bg-primary' : 'border-muted-foreground'}`}></div>
+                                                <Label className="cursor-pointer">{t('createAutomation.feedSpecificPost')}</Label>
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
+
+                                        {feedMode === 'specific' && (
+                                            <div className="space-y-2">
+                                                {selectedPost ? (
+                                                    <div className="flex items-center gap-3 p-3 border rounded bg-background">
+                                                        {/* Thumbnail */}
+                                                        {selectedPost.thumbnail_url || selectedPost.url ? (
+                                                            <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden">
+                                                                <img src={selectedPost.thumbnail_url || selectedPost.url} className="w-full h-full object-cover" alt="Post" onError={(e) => e.currentTarget.style.display = 'none'} />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs">IMG</div>
+                                                        )}
+                                                        <div className="flex-1 overflow-hidden">
+                                                            <p className="text-sm font-medium truncate">ID: {selectedPost.id}</p>
+                                                            <p className="text-xs text-muted-foreground truncate">{selectedPost.caption || t('createAutomation.noCaption')}</p>
+                                                        </div>
+                                                        <Button variant="ghost" size="sm" onClick={() => setSelectedPost(null)}>{t('createAutomation.changePost')}</Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button variant="outline" size="sm" onClick={() => setShowPostSelector(!showPostSelector)} className="w-full">
+                                                        {showPostSelector ? t('createAutomation.closeList') : t('createAutomation.selectPost')}
+                                                    </Button>
+                                                )}
+
+                                                {/* Post Grid Selector */}
+                                                {showPostSelector && !selectedPost && (
+                                                    <div className="border rounded-md p-2 bg-background">
+                                                        {loadingPosts ? (
+                                                            <p className="p-4 text-center text-sm text-muted-foreground">{t('createAutomation.loadingPosts')}</p>
+                                                        ) : (
+                                                            <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
+                                                                {availablePosts.map(post => (
+                                                                    <div
+                                                                        key={post.id}
+                                                                        className="relative aspect-square bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity border rounded overflow-hidden"
+                                                                        onClick={() => {
+                                                                            setSelectedPost({
+                                                                                id: post.id,
+                                                                                url: post.media_url || post.thumbnail_url,
+                                                                                caption: post.caption,
+                                                                                thumbnail_url: post.thumbnail_url || post.media_url
+                                                                            });
+                                                                            setShowPostSelector(false);
+                                                                        }}
+                                                                    >
+                                                                        {(post.media_type === 'IMAGE' || post.media_type === 'CAROUSEL_ALBUM') && (
+                                                                            <img src={post.media_url} className="w-full h-full object-cover" />
+                                                                        )}
+                                                                        {post.media_type === 'VIDEO' && (
+                                                                            <img src={post.thumbnail_url} className="w-full h-full object-cover" />
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                                {availablePosts.length === 0 && (
+                                                                    <p className="col-span-3 text-center py-4 text-sm">{t('createAutomation.noPostsFound')}</p>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        <div className="mt-2 text-xs text-muted-foreground text-center">
+                                                            {t('createAutomation.showingRecent')}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Fallback Manual Input */}
+                                                {!selectedPost && !showPostSelector && (
+                                                    <div className="pt-2">
+                                                        <p className="text-xs text-muted-foreground mb-1">{t('createAutomation.manualInput')}</p>
+                                                        <Input
+                                                            placeholder={t('createAutomation.manualPlaceholder')}
+                                                            className="h-8 text-xs"
+                                                            onChange={(e) => {
+                                                                if (e.target.value.length > 5) {
+                                                                    setSelectedPost({ id: e.target.value, url: '', caption: t('createAutomation.manualInputCaption') })
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                        <Button variant="ghost" onClick={() => router.back()}>{t('createAutomation.cancel')}</Button>
-                        <Button onClick={handleCreate} disabled={loading}>
-                            {loading ? t('createAutomation.creating') : t('createAutomation.create')}
-                        </Button>
-                    </CardFooter>
-                </Card>
-            </div>
+                    </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                    <Button variant="ghost" onClick={() => router.back()}>{t('createAutomation.cancel')}</Button>
+                    <Button onClick={handleCreate} disabled={loading}>
+                        {loading ? t('createAutomation.creating') : t('createAutomation.create')}
+                    </Button>
+                </CardFooter>
+            </Card>
         </div>
+
     )
 }

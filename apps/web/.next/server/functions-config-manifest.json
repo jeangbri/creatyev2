@@ -1,1 +1,1 @@
-{"version":1,"functions":{"/api/debug":{},"/api/instagram/connect":{},"/api/workflows/resume":{},"/inbox":{},"/contacts":{},"/dashboard":{},"/responses":{},"/api/instagram/callback":{},"/workflows":{},"/api/instagram/media":{},"/api/webhooks/instagram":{}}}
+{"version":1,"functions":{"/api/debug":{},"/api/webhooks/instagram":{},"/api/workflows/resume":{},"/dashboard":{},"/contacts":{},"/api/instagram/callback":{},"/inbox":{},"/responses":{},"/workflows":{},"/api/instagram/media":{},"/api/instagram/connect":{}}}

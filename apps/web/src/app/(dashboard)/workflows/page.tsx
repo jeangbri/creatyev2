@@ -25,5 +25,5 @@ export default async function WorkflowsPage() {
         publishedAt: wf.publishedAt ? wf.publishedAt.toISOString() : null
     }));
 
-    return <div className="mx-auto max-w-6xl px-8 py-8"><WorkflowsView workflows={serializedWorkflows} /></div>;
+    return <WorkflowsView workflows={serializedWorkflows} />;
 }

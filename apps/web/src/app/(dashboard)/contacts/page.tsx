@@ -25,5 +25,5 @@ export default async function ContactsPage() {
         lastInteraction: c.lastInteraction.toISOString(),
     }));
 
-    return <div className="mx-auto max-w-6xl px-8 py-8"><ContactsView contacts={serialized} /></div>;
+    return <ContactsView contacts={serialized} />;
 }

@@ -37,5 +37,5 @@ export default async function InboxPage() {
         payload: r.webhookEvent.payloadJson as any,
     }));
 
-    return <div className="mx-auto max-w-6xl px-8 py-8"><InboxView runs={serialized} /></div>;
+    return <InboxView runs={serialized} />;
 }
