@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ptBR, enUS } from "date-fns/locale";
-import { Trash2 } from "lucide-react";
+import { MoreHorizontal, Power, Trash2 } from "lucide-react";
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -18,8 +18,13 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useLanguage } from '@/contexts/language-context';
 
 interface WorkflowCardProps {
@@ -29,11 +34,15 @@ interface WorkflowCardProps {
 export function WorkflowCard({ workflow }: WorkflowCardProps) {
     const router = useRouter();
     const [deleting, setDeleting] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [toggling, setToggling] = useState(false);
     const { t, language } = useLanguage();
 
-    const handleDelete = async (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
+    const handleDelete = async (e?: React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
 
         setDeleting(true);
         try {
@@ -49,6 +58,32 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
             toast.error(t('workflows.card.deleteError'));
         } finally {
             setDeleting(false);
+            setShowDeleteDialog(false);
+        }
+    }
+
+    const handleToggleActive = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        setToggling(true);
+        try {
+            const res = await fetch(`/api/workflows/${workflow.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    workflow: { isActive: !workflow.isActive }
+                })
+            });
+
+            if (!res.ok) throw new Error("Falha ao atualizar");
+
+            toast.success(workflow.isActive ? 'Automação desativada' : 'Automação ativada');
+            router.refresh();
+        } catch (error) {
+            toast.error("Erro ao atualizar status");
+        } finally {
+            setToggling(false);
         }
     }
 
@@ -72,18 +107,36 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                 </h3>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150" onClick={(e) => e.stopPropagation()}>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md"
-                                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                    className="h-7 w-7 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md"
                                 >
-                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <MoreHorizontal className="h-4 w-4" />
                                 </Button>
-                            </AlertDialogTrigger>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={handleToggleActive}>
+                                    <Power className="mr-2 h-4 w-4" />
+                                    {workflow.isActive ? 'Desativar' : 'Ativar'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setShowDeleteDialog(true);
+                                    }}
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Excluir
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                             <AlertDialogContent onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>{t('common.confirmDeleteTitle')}</AlertDialogTitle>
