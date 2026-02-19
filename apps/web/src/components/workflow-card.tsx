@@ -70,13 +70,51 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                 <h3 className="text-[13px] font-semibold text-slate-900 truncate leading-tight">
                     {workflow.title}
                 </h3>
-                <span className={`flex-shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md ${workflow.isActive
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150" onClick={(e) => e.preventDefault()}>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md"
+                                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>{t('common.confirmDeleteTitle')}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        {t('common.confirmDeleteDesc')} &ldquo;{workflow.title}&rdquo;
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                                        {t('common.cancel')}
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={handleDelete}
+                                        className="bg-red-600 hover:bg-red-700 text-white"
+                                        disabled={deleting}
+                                    >
+                                        {deleting ? t('common.deleting') : t('common.delete')}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+
+                    <span className={`flex-shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md ${workflow.isActive
                         ? 'bg-emerald-50 text-emerald-600'
                         : 'bg-slate-50 text-slate-400'
-                    }`}>
-                    <span className={`w-1 h-1 rounded-full ${workflow.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                    {workflow.isActive ? t('workflows.card.active') : t('workflows.card.inactive')}
-                </span>
+                        }`}>
+                        <span className={`w-1 h-1 rounded-full ${workflow.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                        {workflow.isActive ? t('workflows.card.active') : t('workflows.card.inactive')}
+                    </span>
+                </div>
             </div>
 
             {/* Description */}
@@ -96,41 +134,7 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                 </span>
             </div>
 
-            {/* Delete */}
-            <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-10">
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md"
-                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        >
-                            <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>{t('common.confirmDeleteTitle')}</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                {t('common.confirmDeleteDesc')} &ldquo;{workflow.title}&rdquo;
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                                {t('common.cancel')}
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={handleDelete}
-                                className="bg-red-600 hover:bg-red-700 text-white"
-                                disabled={deleting}
-                            >
-                                {deleting ? t('common.deleting') : t('common.delete')}
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </div>
+
         </Link>
     )
 }
