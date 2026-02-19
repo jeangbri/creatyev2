@@ -1,10 +1,20 @@
 "use client"
 
 import { useState } from 'react';
-import { Inbox, CheckCircle2, XCircle, Clock, Search, Zap } from 'lucide-react';
+import { Inbox, CheckCircle2, XCircle, Clock, Search, Zap, Filter, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface Run {
     id: string;
@@ -16,10 +26,17 @@ interface Run {
     eventType: string;
     receivedAt: string;
     payload: any;
+    contact?: {
+        name?: string | null;
+        username?: string | null;
+        profilePicUrl?: string | null;
+        instagramId?: string | null;
+    } | null;
 }
 
 interface InboxViewProps {
     runs: Run[];
+    workflows?: { id: string; title: string }[];
 }
 
 const statusConfig: Record<string, { icon: any; color: string; label: string }> = {
@@ -51,9 +68,23 @@ function getSenderFromPayload(payload: any): string {
     return 'Instagram';
 }
 
-export function InboxView({ runs }: InboxViewProps) {
+export function InboxView({ runs, workflows = [] }: InboxViewProps) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [search, setSearch] = useState('');
     const [selectedId, setSelectedId] = useState<string | null>(runs[0]?.id || null);
+
+    const currentFilter = searchParams.get('workflowId') || 'all';
+
+    const handleFilterChange = (workflowId: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (workflowId === 'all') {
+            params.delete('workflowId');
+        } else {
+            params.set('workflowId', workflowId);
+        }
+        router.push(`/inbox?${params.toString()}`);
+    };
 
     const filtered = runs.filter(r =>
         r.workflowTitle.toLowerCase().includes(search.toLowerCase()) ||
@@ -84,8 +115,8 @@ export function InboxView({ runs }: InboxViewProps) {
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 h-[calc(100vh-220px)]">
                     {/* Left List */}
                     <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200/80 flex flex-col overflow-hidden">
-                        <div className="p-3 border-b border-slate-100">
-                            <div className="relative">
+                        <div className="p-3 border-b border-slate-100 flex gap-2">
+                            <div className="relative flex-1">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" />
                                 <Input
                                     placeholder="Buscar..."
@@ -94,6 +125,24 @@ export function InboxView({ runs }: InboxViewProps) {
                                     className="pl-9 h-8 text-[12px] rounded-lg border-slate-200 bg-slate-50"
                                 />
                             </div>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="icon" className={`h-8 w-8 shrink-0 ${currentFilter !== 'all' ? 'text-blue-600 border-blue-200 bg-blue-50' : 'text-slate-400 border-slate-200'}`}>
+                                        <Filter className="w-3.5 h-3.5" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuItem onClick={() => handleFilterChange('all')}>
+                                        Todas as automações
+                                    </DropdownMenuItem>
+                                    {workflows?.map(wf => (
+                                        <DropdownMenuItem key={wf.id} onClick={() => handleFilterChange(wf.id)} className={currentFilter === wf.id ? 'bg-slate-50 font-medium' : ''}>
+                                            {wf.title}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                         <div className="flex-1 overflow-y-auto">
                             {filtered.map((run) => {
@@ -113,8 +162,11 @@ export function InboxView({ runs }: InboxViewProps) {
                                             <StatusIcon className={`w-3.5 h-3.5 flex-shrink-0 ${cfg.color}`} />
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[11px] text-slate-400">
-                                                {getEventLabel(run.eventType)} · {getSenderFromPayload(run.payload)}
+                                            <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                                                {getEventLabel(run.eventType)} ·
+                                                <span className="text-slate-600 font-medium">
+                                                    {run.contact?.name || getSenderFromPayload(run.payload)}
+                                                </span>
                                             </span>
                                             <span className="text-[10px] text-slate-300">
                                                 {formatDistanceToNow(new Date(run.startedAt), { addSuffix: true, locale: ptBR })}
@@ -151,7 +203,23 @@ export function InboxView({ runs }: InboxViewProps) {
                                     </div>
                                     <div className="rounded-lg bg-slate-50 p-3">
                                         <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Remetente</p>
-                                        <p className="text-[13px] font-medium text-slate-700">{getSenderFromPayload(selected.payload)}</p>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            {selected.contact?.profilePicUrl ? (
+                                                <img src={selected.contact.profilePicUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                                            ) : (
+                                                <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-slate-400">
+                                                    <User className="w-3.5 h-3.5" />
+                                                </div>
+                                            )}
+                                            <div>
+                                                <p className="text-[13px] font-medium text-slate-700 leading-none">
+                                                    {selected.contact?.name || getSenderFromPayload(selected.payload)}
+                                                </p>
+                                                {selected.contact?.username && (
+                                                    <p className="text-[11px] text-slate-400">@{selected.contact.username}</p>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
