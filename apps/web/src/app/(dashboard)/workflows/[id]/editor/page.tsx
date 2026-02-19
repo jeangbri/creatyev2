@@ -261,7 +261,7 @@ function FlowEditor() {
     if (loading) return <div className="flex items-center justify-center h-screen text-muted-foreground">{t('editor.loading')}</div>
 
     return (
-        <div className="h-[calc(100vh-theme(spacing.16))] flex flex-col bg-slate-50">
+        <div className="h-full flex flex-col bg-slate-50">
             {/* Toolbar */}
             <div className="flex items-center justify-between px-6 py-3 border-b bg-white shadow-sm z-10">
                 <div className="flex items-center gap-4">
