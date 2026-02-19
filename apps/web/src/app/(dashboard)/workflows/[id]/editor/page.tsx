@@ -24,6 +24,7 @@ import {
     BackgroundVariant,
     useReactFlow
 } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
 import { InstagramNode, StartNode, TriggerNode, DelayNode, TagNode, ConditionNode, AINode, WebhookNode } from "@/components/flow/custom-nodes";
 import { Sidebar } from "@/components/flow/sidebar";
