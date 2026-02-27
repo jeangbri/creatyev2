@@ -251,7 +251,93 @@ export const translations = {
             field: "Campo",
             yes: "SIM",
             no: "NÃO"
-        }
+        },
+        landing: {
+            nav: {
+                features: "Funcionalidades",
+                howItWorks: "Como funciona",
+                faq: "FAQ",
+                login: "Log In",
+                register: "Começar Grátis"
+            },
+            hero: {
+                badge: "Nova versão 2.0 disponível",
+                titleLine1: "Automação",
+                titleLine2: "Inteligente",
+                titleLine3: "para Instagram",
+                description: "Transforme seu Direct em uma máquina de vendas 24/7. Responda clientes, envie cupons e gerencie leads automaticamente sem risco de bloqueio.",
+                ctaPrimary: "Criar Conta Gratuita",
+                ctaSecondary: "Ver Demonstração",
+                check1: "Sem cartão",
+                check2: "Meta Partner"
+            },
+            stats: {
+                messages: "Mensagens Mensais",
+                sales: "Vendas Geradas",
+                time: "Tempo Economizado",
+                clients: "Clientes Satisfeitos"
+            },
+            features: {
+                title: "Potencialize seu",
+                titleAccent: "Atendimento",
+                subtitle: "Chega de perder vendas por demora na resposta. O Creatye cuida de tudo para você focar no estratégico.",
+                item1Title: "Respostas Automáticas",
+                item1Desc: "Configure palavras-chave e responda directs instantaneamente, 24/7.",
+                item2Title: "Menções em Stories",
+                item2Desc: "Agradeça quem te marca e envie cupons exclusivos automaticamente.",
+                item3Title: "Comentários no Feed",
+                item3Desc: "Transforme cada comentário em uma conversa de vendas no direct.",
+                item4Title: "Fluxos Visuais",
+                item4Desc: "Crie funis complexos arrastando e soltando blocos. Simples e poderoso.",
+                item5Title: "Gestão de Leads",
+                item5Desc: "CRM integrado para organizar seus contatos e saber quem está pronto para comprar.",
+                item6Title: "Relatórios Detalhados",
+                item6Desc: "Acompanhe métricas de conversão e entenda o que funciona melhor."
+            },
+            howItWorks: {
+                title: "Simples como deve ser",
+                subtitle: "Em menos de 5 minutos você configura sua primeira automação.",
+                step1Title: "Conecte",
+                step1Desc: "Faça login com seu Facebook/Instagram oficial.",
+                step2Title: "Crie",
+                step2Desc: "Desenhe seu fluxo ou escolha um modelo pronto.",
+                step3Title: "Automatize",
+                step3Desc: "Ative e veja as vendas acontecendo 24/7."
+            },
+            trust: {
+                badge: "Segurança de Nível Bancário"
+            },
+            faq: {
+                title: "Dúvidas Frequentes",
+                subtitle: "Tudo que você precisa saber antes de começar.",
+                questions: {
+                    q1: "Minha conta corre risco de bloqueio?",
+                    a1: "Absolutamente não. Utilize a API Oficial da Meta para garantir 100% de conformidade com as políticas do Instagram. Diferente de ferramentas antigas, não simulamos atividade humana, somos um parceiro oficial.",
+                    q2: "Preciso saber programar?",
+                    a2: "Zero. Nossa plataforma é 'No-Code' (sem código). Você cria fluxos arrastando blocos, como se fosse um quebra-cabeça visual.",
+                    q3: "Funciona no plano gratuito?",
+                    a3: "Sim! Temos um plano gratuito generoso para você testar e começar a ver resultados antes de decidir fazer um upgrade.",
+                    q4: "Posso cancelar quando quiser?",
+                    a4: "Sim, sem contratos de fidelidade. Você pode cancelar sua assinatura a qualquer momento diretamente no painel."
+                }
+            },
+            cta: {
+                title: "Pronto para escalar",
+                titleAccent: "suas vendas?",
+                subtitle: "Junte-se a milhares de empresas que usam o Creatye para automatizar seu Instagram.",
+                button: "Criar Conta Gratuita"
+            },
+            footer: {
+                privacy: "Privacidade",
+                terms: "Termos",
+                rights: "Creatye Automação. Feito com ❤️ para empreendedores.",
+                chatSimulation: {
+                    online: "Online agora",
+                    today: "Hoje",
+                    automaticReply: "Resposta Automática"
+                }
+            }
+        },
     },
     en: {
         sidebar: {
@@ -503,6 +589,92 @@ export const translations = {
             field: "Field",
             yes: "YES",
             no: "NO"
+        },
+        landing: {
+            nav: {
+                features: "Features",
+                howItWorks: "How it works",
+                faq: "FAQ",
+                login: "Log In",
+                register: "Get Started Free"
+            },
+            hero: {
+                badge: "New version 2.0 available",
+                titleLine1: "Smart",
+                titleLine2: "Automation",
+                titleLine3: "for Instagram",
+                description: "Turn your Direct into a 24/7 sales machine. Respond to customers, send coupons and manage leads automatically without risk of blocking.",
+                ctaPrimary: "Create Free Account",
+                ctaSecondary: "Watch Demo",
+                check1: "No credit card",
+                check2: "Meta Partner"
+            },
+            stats: {
+                messages: "Monthly Messages",
+                sales: "Sales Generated",
+                time: "Time Saved",
+                clients: "Happy Customers"
+            },
+            features: {
+                title: "Power up your",
+                titleAccent: "Customer Service",
+                subtitle: "Stop losing sales due to slow responses. Creatye takes care of everything so you can focus on strategy.",
+                item1Title: "Automatic Replies",
+                item1Desc: "Set up keywords and respond to directs instantly, 24/7.",
+                item2Title: "Story Mentions",
+                item2Desc: "Thank those who tag you and send exclusive coupons automatically.",
+                item3Title: "Feed Comments",
+                item3Desc: "Turn every comment into a sales conversation in direct messages.",
+                item4Title: "Visual Flows",
+                item4Desc: "Create complex funnels by dragging and dropping blocks. Simple and powerful.",
+                item5Title: "Lead Management",
+                item5Desc: "Integrated CRM to organize your contacts and know who's ready to buy.",
+                item6Title: "Detailed Reports",
+                item6Desc: "Track conversion metrics and understand what works best."
+            },
+            howItWorks: {
+                title: "Simple as it should be",
+                subtitle: "In less than 5 minutes you configure your first automation.",
+                step1Title: "Connect",
+                step1Desc: "Log in with your official Facebook/Instagram.",
+                step2Title: "Create",
+                step2Desc: "Design your flow or choose a ready-made template.",
+                step3Title: "Automate",
+                step3Desc: "Activate and watch sales happen 24/7."
+            },
+            trust: {
+                badge: "Bank-Level Security"
+            },
+            faq: {
+                title: "Frequently Asked Questions",
+                subtitle: "Everything you need to know before you start.",
+                questions: {
+                    q1: "Is my account at risk of being blocked?",
+                    a1: "Absolutely not. Use Meta's Official API to ensure 100% compliance with Instagram policies. Unlike old tools, we don't simulate human activity, we are an official partner.",
+                    q2: "Do I need to know how to code?",
+                    a2: "Zero. Our platform is 'No-Code'. You create flows by dragging blocks, like a visual puzzle.",
+                    q3: "Does it work on the free plan?",
+                    a3: "Yes! We have a generous free plan for you to test and start seeing results before deciding to upgrade.",
+                    q4: "Can I cancel whenever I want?",
+                    a4: "Yes, no loyalty contracts. You can cancel your subscription at any time directly in the dashboard."
+                }
+            },
+            cta: {
+                title: "Ready to scale",
+                titleAccent: "your sales?",
+                subtitle: "Join thousands of companies using Creatye to automate their Instagram.",
+                button: "Create Free Account"
+            },
+            footer: {
+                privacy: "Privacy",
+                terms: "Terms",
+                rights: "Creatye Automation. Made with ❤️ for entrepreneurs.",
+                chatSimulation: {
+                    online: "Online now",
+                    today: "Today",
+                    automaticReply: "Automatic Reply"
+                }
+            }
         }
     }
 };

@@ -18,8 +18,10 @@ import {
     X,
     Cpu,
     Sparkles,
-    Bot
+    Bot,
+    Globe
 } from 'lucide-react'
+import { translations, Language } from '@/lib/translations'
 
 // --- Utility Components ---
 
@@ -86,12 +88,19 @@ function FAQItem({ question, answer }: { question: string, answer: string }) {
 export default function LandingPage() {
     const [isScrolled, setIsScrolled] = useState(false)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+    const [language, setLanguage] = useState<Language>('pt')
+
+    const t = translations[language].landing;
 
     useEffect(() => {
         const handleScroll = () => setIsScrolled(window.scrollY > 20)
         window.addEventListener('scroll', handleScroll)
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
+
+    const toggleLanguage = () => {
+        setLanguage(prev => prev === 'pt' ? 'en' : 'pt')
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans selection:bg-cyan-200 selection:text-cyan-900 overflow-x-hidden">
@@ -112,24 +121,30 @@ export default function LandingPage() {
 
                     {/* Desktop Menu */}
                     <div className="hidden md:flex items-center gap-8 bg-white/50 backdrop-blur-sm px-6 py-2 rounded-full border border-slate-200/50 shadow-sm">
-                        <a href="#features" className="text-sm font-medium text-slate-600 hover:text-cyan-600 transition-colors">Funcionalidades</a>
-                        <a href="#how-it-works" className="text-sm font-medium text-slate-600 hover:text-cyan-600 transition-colors">Como funciona</a>
-                        <a href="#pricing" className="text-sm font-medium text-slate-600 hover:text-cyan-600 transition-colors">Planos</a>
-                        <a href="#faq" className="text-sm font-medium text-slate-600 hover:text-cyan-600 transition-colors">FAQ</a>
+                        <a href="#features" className="text-sm font-medium text-slate-600 hover:text-cyan-600 transition-colors">{t.nav.features}</a>
+                        <a href="#how-it-works" className="text-sm font-medium text-slate-600 hover:text-cyan-600 transition-colors">{t.nav.howItWorks}</a>
+                        <a href="#faq" className="text-sm font-medium text-slate-600 hover:text-cyan-600 transition-colors">{t.nav.faq}</a>
                     </div>
 
                     <div className="hidden md:flex items-center gap-4">
+                        <button
+                            onClick={toggleLanguage}
+                            className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-cyan-600 transition-colors px-3 py-2 rounded-full bg-slate-50 border border-slate-200"
+                        >
+                            <Globe className="w-4 h-4" />
+                            {language.toUpperCase()}
+                        </button>
                         <Link
                             href="/entrar"
                             className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors px-4 py-2"
                         >
-                            Log In
+                            {t.nav.login}
                         </Link>
                         <Link
                             href="/registrar"
                             className="relative group overflow-hidden rounded-full px-6 py-2.5 bg-slate-900 text-white font-bold shadow-lg shadow-slate-900/10 hover:shadow-cyan-500/20 transition-all hover:-translate-y-0.5"
                         >
-                            <span className="relative z-10 group-hover:text-cyan-50 transition-colors">Começar Grátis</span>
+                            <span className="relative z-10 group-hover:text-cyan-50 transition-colors">{t.nav.register}</span>
                             <div className="absolute inset-0 bg-cyan-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
                         </Link>
                     </div>
@@ -146,12 +161,22 @@ export default function LandingPage() {
                 {/* Mobile Menu */}
                 {isMobileMenuOpen && (
                     <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-slate-100 p-6 flex flex-col gap-4 shadow-xl">
-                        <a href="#features" className="text-lg font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>Funcionalidades</a>
-                        <a href="#how-it-works" className="text-lg font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>Como funciona</a>
-                        <a href="#faq" className="text-lg font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>FAQ</a>
+                        <a href="#features" className="text-lg font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>{t.nav.features}</a>
+                        <a href="#how-it-works" className="text-lg font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>{t.nav.howItWorks}</a>
+                        <a href="#faq" className="text-lg font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>{t.nav.faq}</a>
+                        <button
+                            onClick={() => {
+                                toggleLanguage();
+                                setIsMobileMenuOpen(false);
+                            }}
+                            className="flex items-center gap-2 text-lg font-medium text-slate-600 py-2"
+                        >
+                            <Globe className="w-5 h-5" />
+                            {language === 'pt' ? 'Mudar para Inglês' : 'Switch to Portuguese'}
+                        </button>
                         <hr className="border-slate-100 my-2" />
-                        <Link href="/entrar" className="text-lg font-medium text-slate-600">Log In</Link>
-                        <Link href="/registrar" className="text-lg font-bold text-cyan-600">Criar Conta Grátis</Link>
+                        <Link href="/entrar" className="text-lg font-medium text-slate-600">{t.nav.login}</Link>
+                        <Link href="/registrar" className="text-lg font-bold text-cyan-600">{t.nav.register}</Link>
                     </div>
                 )}
             </nav>
@@ -193,26 +218,24 @@ export default function LandingPage() {
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
                                 </span>
                                 <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                                    Nova versão 2.0 disponível
+                                    {t.hero.badge}
                                 </span>
                             </div>
                         </Reveal>
 
                         <Reveal delay={100}>
                             <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.1] mb-6 drop-shadow-sm">
-                                Automação <br />
+                                {t.hero.titleLine1} <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 animate-gradient-xy bg-[length:200%_auto]">
-                                    Inteligente
+                                    {t.hero.titleLine2}
                                 </span> <br />
-                                para Instagram
+                                {t.hero.titleLine3}
                             </h1>
                         </Reveal>
 
                         <Reveal delay={200}>
                             <p className="text-lg text-slate-600 mb-10 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium opacity-90">
-                                Transforme seu Direct em uma máquina de vendas 24/7.
-                                Responda clientes, envie cupons e gerencie leads automaticamente
-                                sem risco de bloqueio.
+                                {t.hero.description}
                             </p>
                         </Reveal>
 
@@ -222,22 +245,22 @@ export default function LandingPage() {
                                     href="/registrar"
                                     className="w-full sm:w-auto flex items-center justify-center gap-2 text-base font-bold text-white bg-slate-900 hover:bg-slate-800 px-8 py-4 rounded-full transition-all duration-300 shadow-xl shadow-slate-900/20 hover:shadow-cyan-500/30 hover:-translate-y-1"
                                 >
-                                    Criar Conta Gratuita
+                                    {t.hero.ctaPrimary}
                                     <ArrowRight className="w-5 h-5" />
                                 </Link>
                                 <a
                                     href="#how-it-works"
                                     className="w-full sm:w-auto flex items-center justify-center gap-2 text-base font-semibold text-slate-700 bg-white/70 hover:bg-white border border-slate-200/60 backdrop-blur-sm px-8 py-4 rounded-full transition-all duration-300 shadow-sm hover:shadow-md"
                                 >
-                                    Ver Demonstração
+                                    {t.hero.ctaSecondary}
                                 </a>
                             </div>
                             <div className="mt-8 flex items-center justify-center lg:justify-start gap-6 text-sm font-medium text-slate-500">
                                 <span className="flex items-center gap-1.5 bg-white/40 px-3 py-1 rounded-full border border-white/20 shadow-sm backdrop-blur-sm">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Sem cartão
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" /> {t.hero.check1}
                                 </span>
                                 <span className="flex items-center gap-1.5 bg-white/40 px-3 py-1 rounded-full border border-white/20 shadow-sm backdrop-blur-sm">
-                                    <Shield className="w-4 h-4 text-emerald-500" /> Meta Partner
+                                    <Shield className="w-4 h-4 text-emerald-500" /> {t.hero.check2}
                                 </span>
                             </div>
                         </Reveal>
@@ -288,7 +311,7 @@ export default function LandingPage() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-bold text-slate-900">Cliente Loja</p>
-                                                <p className="text-[10px] text-slate-400 font-medium">Online agora</p>
+                                                <p className="text-[10px] text-slate-400 font-medium">{t.footer.chatSimulation.online}</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-1">
@@ -303,7 +326,7 @@ export default function LandingPage() {
 
                                         {/* Timestamp */}
                                         <div className="text-center">
-                                            <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-1 rounded-full font-medium">Hoje 14:32</span>
+                                            <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-1 rounded-full font-medium">{t.footer.chatSimulation.today} 14:32</span>
                                         </div>
 
                                         {/* User Message */}
@@ -323,7 +346,7 @@ export default function LandingPage() {
                                             </div>
                                             <div className="bg-white text-slate-700 px-4 py-3 rounded-2xl rounded-tl-sm text-sm max-w-[85%] border border-slate-100 shadow-sm transition-transform group-hover:scale-[1.02]">
                                                 <p className="font-bold mb-1.5 text-cyan-600 text-[10px] uppercase tracking-wide flex items-center gap-1">
-                                                    <Bot className="w-3 h-3" /> Resposta Automática
+                                                    <Bot className="w-3 h-3" /> {t.footer.chatSimulation.automaticReply}
                                                 </p>
                                                 Oii! Tudo bem? ✨
                                                 <br />
@@ -385,10 +408,10 @@ export default function LandingPage() {
             <section className="py-10 bg-slate-900 text-white">
                 <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
                     {[
-                        { label: "Mensagens Mensais", value: "+1.5M" },
-                        { label: "Vendas Geradas", value: "R$ 12M+" },
-                        { label: "Tempo Economizado", value: "+50k h" },
-                        { label: "Clientes Satisfeitos", value: "2.300+" },
+                        { label: t.stats.messages, value: "+1.5M" },
+                        { label: t.stats.sales, value: "R$ 12M+" },
+                        { label: t.stats.time, value: "+50k h" },
+                        { label: t.stats.clients, value: "2.300+" },
                     ].map((stat, i) => (
                         <div key={i} className="text-center group hover:-translate-y-1 transition-transform">
                             <p className="text-3xl font-extrabold text-cyan-400 mb-1">{stat.value}</p>
@@ -404,10 +427,10 @@ export default function LandingPage() {
                     <Reveal>
                         <div className="text-center max-w-3xl mx-auto mb-24">
                             <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-6">
-                                Potencialize seu <br /> <span className="text-cyan-600">Atendimento</span>
+                                {t.features.title} <br /> <span className="text-cyan-600">{t.features.titleAccent}</span>
                             </h2>
                             <p className="text-lg text-slate-500">
-                                Chega de perder vendas por demora na resposta. O Creatye cuida de tudo para você focar no estratégico.
+                                {t.features.subtitle}
                             </p>
                         </div>
                     </Reveal>
@@ -417,38 +440,38 @@ export default function LandingPage() {
                             {
                                 icon: <MessageSquare className="w-8 h-8 text-white" />,
                                 color: "bg-cyan-500",
-                                title: "Respostas Automáticas",
-                                desc: "Configure palavras-chave e responda directs instantaneamente, 24/7."
+                                title: t.features.item1Title,
+                                desc: t.features.item1Desc
                             },
                             {
                                 icon: <Instagram className="w-8 h-8 text-white" />,
                                 color: "bg-pink-500",
-                                title: "Menções em Stories",
-                                desc: "Agradeça quem te marca e envie cupons exclusivos automaticamente."
+                                title: t.features.item2Title,
+                                desc: t.features.item2Desc
                             },
                             {
                                 icon: <MousePointerClick className="w-8 h-8 text-white" />,
                                 color: "bg-amber-500",
-                                title: "Comentários no Feed",
-                                desc: "Transforme cada comentário em uma conversa de vendas no direct."
+                                title: t.features.item3Title,
+                                desc: t.features.item3Desc
                             },
                             {
                                 icon: <Zap className="w-8 h-8 text-white" />,
                                 color: "bg-emerald-500",
-                                title: "Fluxos Visuais",
-                                desc: "Crie funis complexos arrastando e soltando blocos. Simples e poderoso."
+                                title: t.features.item4Title,
+                                desc: t.features.item4Desc
                             },
                             {
                                 icon: <Users className="w-8 h-8 text-white" />,
                                 color: "bg-indigo-500",
-                                title: "Gestão de Leads",
-                                desc: "CRM integrado para organizar seus contatos e saber quem está pronto para comprar."
+                                title: t.features.item5Title,
+                                desc: t.features.item5Desc
                             },
                             {
                                 icon: <BarChart3 className="w-8 h-8 text-white" />,
                                 color: "bg-violet-500",
-                                title: "Relatórios Detalhados",
-                                desc: "Acompanhe métricas de conversão e entenda o que funciona melhor."
+                                title: t.features.item6Title,
+                                desc: t.features.item6Desc
                             }
                         ].map((feature, i) => (
                             <Reveal key={i} delay={i * 100}>
@@ -475,8 +498,8 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-6">
                     <Reveal>
                         <div className="text-center mb-20">
-                            <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6">Simples como deve ser</h2>
-                            <p className="text-slate-500 max-w-2xl mx-auto">Em menos de 5 minutos você configura sua primeira automação.</p>
+                            <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6">{t.howItWorks.title}</h2>
+                            <p className="text-slate-500 max-w-2xl mx-auto">{t.howItWorks.subtitle}</p>
                         </div>
                     </Reveal>
 
@@ -485,9 +508,9 @@ export default function LandingPage() {
                         <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-1 bg-gradient-to-r from-slate-200 via-cyan-300 to-slate-200 border-t border-b border-white z-0" />
 
                         {[
-                            { step: "01", title: "Conecte", desc: "Faça login com seu Facebook/Instagram oficial." },
-                            { step: "02", title: "Crie", desc: "Desenhe seu fluxo ou escolha um modelo pronto." },
-                            { step: "03", title: "Automatize", desc: "Ative e veja as vendas acontecendo 24/7." }
+                            { step: "01", title: t.howItWorks.step1Title, desc: t.howItWorks.step1Desc },
+                            { step: "02", title: t.howItWorks.step2Title, desc: t.howItWorks.step2Desc },
+                            { step: "03", title: t.howItWorks.step3Title, desc: t.howItWorks.step3Desc }
                         ].map((item, i) => (
                             <Reveal key={i} delay={i * 200}>
                                 <div className="relative z-10 flex flex-col items-center text-center">
@@ -506,7 +529,7 @@ export default function LandingPage() {
             {/* ═══ TRUST & SECURITY ═══ */}
             <section className="py-20 bg-white border-y border-slate-100">
                 <div className="max-w-7xl mx-auto px-6 text-center">
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-12">Segurança de Nível Bancário</p>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-12">{t.trust.badge}</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                         {[
                             { icon: <Shield className="w-6 h-6" />, text: "Criptografia E2E" },
@@ -528,16 +551,16 @@ export default function LandingPage() {
                 <div className="max-w-3xl mx-auto px-6">
                     <Reveal>
                         <div className="text-center mb-16">
-                            <h2 className="text-4xl font-extrabold text-slate-900 mb-4">Dúvidas Frequentes</h2>
-                            <p className="text-slate-500">Tudo que você precisa saber antes de começar.</p>
+                            <h2 className="text-4xl font-extrabold text-slate-900 mb-4">{t.faq.title}</h2>
+                            <p className="text-slate-500">{t.faq.subtitle}</p>
                         </div>
                     </Reveal>
 
                     <Reveal delay={200}>
-                        <FAQItem question="Minha conta corre risco de bloqueio?" answer="Absolutamente não. Utilize a API Oficial da Meta para garantir 100% de conformidade com as políticas do Instagram. Diferente de ferramentas antigas, não simulamos atividade humana, somos um parceiro oficial." />
-                        <FAQItem question="Preciso saber programar?" answer="Zero. Nossa plataforma é 'No-Code' (sem código). Você cria fluxos arrastando blocos, como se fosse um quebra-cabeça visual." />
-                        <FAQItem question="Funciona no plano gratuito?" answer="Sim! Temos um plano gratuito generoso para você testar e começar a ver resultados antes de decidir fazer um upgrade." />
-                        <FAQItem question="Posso cancelar quando quiser?" answer="Sim, sem contratos de fidelidade. Você pode cancelar sua assinatura a qualquer momento diretamente no painel." />
+                        <FAQItem question={t.faq.questions.q1} answer={t.faq.questions.a1} />
+                        <FAQItem question={t.faq.questions.q2} answer={t.faq.questions.a2} />
+                        <FAQItem question={t.faq.questions.q3} answer={t.faq.questions.a3} />
+                        <FAQItem question={t.faq.questions.q4} answer={t.faq.questions.a4} />
                     </Reveal>
                 </div>
             </section>
@@ -552,17 +575,17 @@ export default function LandingPage() {
                 <div className="relative z-10 max-w-4xl mx-auto">
                     <Reveal>
                         <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight mb-8">
-                            Pronto para escalar <br /> suas vendas?
+                            {t.cta.title} <br /> {t.cta.titleAccent}
                         </h2>
                         <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto">
-                            Junte-se a milhares de empresas que usam o Creatye para automatizar seu Instagram.
+                            {t.cta.subtitle}
                         </p>
                         <Link
                             href="/registrar"
                             className="inline-flex items-center gap-3 text-lg font-bold text-slate-900 bg-white hover:bg-cyan-50 px-12 py-5 rounded-full transition-all duration-300 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_-10px_rgba(8,145,178,0.5)] hover:-translate-y-1 group"
                         >
                             <Sparkles className="w-5 h-5 text-cyan-500 group-hover:animate-spin" />
-                            Criar Conta Gratuita
+                            {t.cta.button}
                         </Link>
                     </Reveal>
                 </div>
@@ -578,14 +601,13 @@ export default function LandingPage() {
                             className="h-8 w-auto opacity-70 grayscale hover:grayscale-0 transition-all"
                         />
                         <div className="flex flex-wrap justify-center gap-8 text-sm font-medium text-slate-500">
-                            <a href="#" className="hover:text-cyan-600 transition-colors">Funcionalidades</a>
-                            <a href="#" className="hover:text-cyan-600 transition-colors">Preços</a>
-                            <Link href="/privacy" className="hover:text-cyan-600 transition-colors">Privacidade</Link>
-                            <Link href="/terms" className="hover:text-cyan-600 transition-colors">Termos</Link>
+                            <a href="#features" className="hover:text-cyan-600 transition-colors">{t.nav.features}</a>
+                            <Link href="/privacy" className="hover:text-cyan-600 transition-colors">{t.footer.privacy}</Link>
+                            <Link href="/terms" className="hover:text-cyan-600 transition-colors">{t.footer.terms}</Link>
                         </div>
                     </div>
                     <div className="text-center text-xs text-slate-400 border-t border-slate-50 pt-8">
-                        © {new Date().getFullYear()} Creatye Automação. <br className="md:hidden" /> Feito com ❤️ para empreendedores.
+                        © {new Date().getFullYear()} {t.footer.rights}
                     </div>
                 </div>
             </footer>
