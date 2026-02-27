@@ -115,18 +115,19 @@ export default function IntegrationsPage() {
                             <AlertCircle className="mt-0.5 h-5 w-5 text-blue-600 shrink-0" />
                             <div className="space-y-1">
                                 <p className="text-sm font-medium text-blue-900">
-                                    Requisito da API Oficial do Instagram
+                                    {t('integrations.instagram.apiRequirementTitle')}
                                 </p>
-                                <p className="text-sm text-blue-700 leading-relaxed">
-                                    Para conectar sua conta, ela precisa ser do tipo <strong>Criador de Conteúdo</strong> ou <strong>Comercial (Business)</strong>. Contas pessoais não são suportadas pela API oficial.
-                                </p>
+                                <p
+                                    className="text-sm text-blue-700 leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: t('integrations.instagram.apiRequirementDetail') }}
+                                />
                                 <a
                                     href="https://help.instagram.com/502981923235522"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-900 hover:underline mt-2 transition-colors"
                                 >
-                                    Ver instruções oficiais <ExternalLink className="h-3 w-3" />
+                                    {t('integrations.instagram.viewOfficialInstructions')} <ExternalLink className="h-3 w-3" />
                                 </a>
                             </div>
                         </div>

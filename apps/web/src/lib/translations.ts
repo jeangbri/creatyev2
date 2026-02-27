@@ -101,7 +101,10 @@ export const translations = {
                 connectButton: "Conectar com Instagram",
                 revalidateButton: "Revalidar conexão",
                 disconnectButton: "Desconectar",
-                connected: "Conectado"
+                connected: "Conectado",
+                apiRequirementTitle: "Requisito da API Oficial do Instagram",
+                apiRequirementDetail: "Para conectar sua conta, ela precisa ser do tipo <strong>Criador de Conteúdo</strong> ou <strong>Comercial (Business)</strong>. Contas pessoais não são suportadas pela API oficial.",
+                viewOfficialInstructions: "Ver instruções oficiais"
             }
         },
         createAutomation: {
@@ -439,7 +442,10 @@ export const translations = {
                 connectButton: "Connect with Instagram",
                 revalidateButton: "Revalidate connection",
                 disconnectButton: "Disconnect",
-                connected: "Connected"
+                connected: "Connected",
+                apiRequirementTitle: "Instagram Official API Requirement",
+                apiRequirementDetail: "To connect your account, it must be a <strong>Creator</strong> or <strong>Business</strong> account. Personal accounts are not supported by the official API.",
+                viewOfficialInstructions: "See official instructions"
             }
         },
         createAutomation: {
